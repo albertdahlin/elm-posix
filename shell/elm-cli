@@ -1,0 +1,119 @@
+#!/usr/bin/env node
+
+const fs = require('fs');
+const childProcess = require('child_process');
+const readline = require('readline');
+
+var tmpJs = '/tmp/elm-cli.js';
+
+var argv = process.argv.slice(2);
+var programFile = argv[0];
+
+if (!programFile) {
+    process.exit();
+}
+
+let rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
+
+var elmApp = compileProgram(programFile);
+var flags = {
+    argv: argv,
+    pid: process.pid,
+    env: process.env
+}
+
+
+var app = elmApp.init({ flags: flags });
+var io = {
+    fwrite: function(fd, content) {
+        fs.writeSync(fd, content);
+    },
+    fread: function(fd) {
+        return fs.readFileSync(fd).toString();
+    },
+    fopen: function(filename) {
+        try {
+            return fs.openSync(filename);
+        } catch (e) {
+            return e.toString();
+        }
+    },
+    exit: function(status) {
+        rl.close();
+        process.exit(status);
+    }
+};
+
+app.ports.send.subscribe(function(msg) {
+    var fn = io[msg.fn];
+
+    if (!fn) {
+        console.log(`IO Function "${msg.fn}" not implemented.`);
+        return;
+    }
+
+    var result = fn.apply(null, msg.args);
+
+    app.ports.recv.send(result);
+});
+
+
+function compileProgram(filename) {
+    var elmJson = JSON.parse(fs.readFileSync(process.cwd() + '/elm.json').toString());
+    var sourceDirectories = elmJson['source-directories'];
+    var moduleName =
+        filename.split('/')
+            .filter(part => part.match(/^[A-Z]/))
+            .join('.')
+            .replace(/\.elm$/, '');
+
+    var sourceCode = wrapElmProgram(moduleName);
+    var elmMain = '/tmp/elm-cli' + process.pid;
+
+    fs.writeFileSync(`${elmMain}.elm`, sourceCode);
+
+    try{
+        childProcess.execSync(`elm make --optimize ${elmMain}.elm --output ${elmMain}.js`);
+    } catch(e) {
+        process.exit(255);
+    }
+
+    var elmProgram = require(`${elmMain}.js`);
+    var elmApp = elmProgram;
+
+    while (true) {
+        if (elmApp.init) {
+            break;
+        }
+        elmApp = elmApp[Object.keys(elmApp)[0]];
+    }
+
+    return elmApp;
+}
+
+function wrapElmProgram(moduleName) {
+    return `
+port module Wrapper exposing (..)
+
+
+import Json.Encode as Encode exposing (Value)
+import ${moduleName} as Cli
+
+
+type alias ArgsToJs =
+    { fn : String
+    , args : List Value
+    }
+
+
+port send : ArgsToJs -> Cmd msg
+port recv : (Value -> msg) -> Sub msg
+
+main =
+    Cli.program recv send
+`;
+}
+
