@@ -1,5 +1,5 @@
 module Posix.IO exposing
-    ( IO, return, do, map, exitOnError
+    ( IO, return, map, do, andThen, exitOnError
     , Process
     , PosixProgram, program
     )
@@ -9,7 +9,7 @@ module Posix.IO exposing
 
 # IO Monad
 
-@docs IO, return, do, map, exitOnError
+@docs IO, return, map, do, andThen, exitOnError
 
 
 # Create IO Program
