@@ -14,7 +14,7 @@ module Posix.IO exposing
 
 # Create IO Program
 
-@docs Process, program PosixProgram
+@docs Process, program, PosixProgram
 
 -}
 
@@ -71,7 +71,7 @@ do =
             )
 
 -}
-andThen : IO a -> (a -> IO b) -> IO b
+andThen : (a -> IO b) -> IO a -> IO b
 andThen a b =
     IO.do b a
 
