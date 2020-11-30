@@ -7,3 +7,12 @@ The idea:
 - [ ] install the cli tool, `npm install -g albertdahlin/elm-posix`
 - [ ] run `elm-cli src/YourProgram.elm`
 
+## WIP
+
+A proof of concept is implemented and testable. There are still some IO to be added.
+
+Requires `node` and `elm`.
+```
+cd example
+../shell/elm-cli src/HelloUser.elm
+```
