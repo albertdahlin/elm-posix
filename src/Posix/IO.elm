@@ -1,7 +1,6 @@
 module Posix.IO exposing
     ( IO, return, map, do, andThen, exitOnError
-    , Process
-    , PosixProgram, program
+    , Process, program, PosixProgram
     )
 
 {-|
@@ -51,8 +50,7 @@ return a =
 
 {-| Compose IO actions, do-notation style.
 
-    do (File.open "file.txt") <| \result ->
-    do (exitOnError result) <| \fd ->
+    do (File.open "file.txt" |> exitOnError identity) <| \fd ->
     do (File.write fd "Hello, World")
 
 -}
@@ -64,8 +62,8 @@ do =
 {-| Compose IO actions, `andThen` style
 
     File.open "file.txt"
-        |> andThen exitOnError
-        |> andthen
+        |> exitOnError identity
+        |> andThen
             (\fd ->
                 File.write fd "Hello, World"
             )
