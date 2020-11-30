@@ -1,5 +1,5 @@
 module Posix.IO exposing
-    ( IO, return, do, map, fail
+    ( IO, return, do, map, exitOnError
     , Process, PosixProgram, program
     )
 
@@ -8,7 +8,7 @@ module Posix.IO exposing
 
 # IO Monad
 
-@docs IO, return, do, map, fail
+@docs IO, return, do, map, exitOnError
 
 
 # Create IO Program
@@ -62,8 +62,8 @@ map =
 
 {-| Print to stderr and exit program on `Err`
 -}
-fail : (e -> String) -> IO (Result e a) -> IO a
-fail toErrorMsg io =
+exitOnError : (e -> String) -> IO (Result e a) -> IO a
+exitOnError toErrorMsg io =
     IO.do io
         (\result ->
             case result of
