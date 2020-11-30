@@ -41,25 +41,29 @@ type Error
     = CouldNotOpen String
 
 
-{-| -}
+{-| Standard Int
+-}
 stdIn : FD
 stdIn =
     FD 0
 
 
-{-| -}
+{-| Standard Out
+-}
 stdOut : FD
 stdOut =
     FD 1
 
 
-{-| -}
+{-| Standard Error
+-}
 stdErr : FD
 stdErr =
     FD 2
 
 
-{-| -}
+{-| Open a file
+-}
 open : Filename -> IO (Result String FD)
 open filename =
     IO.make
@@ -73,7 +77,8 @@ open filename =
         (Effect.File <| Effect.Open filename)
 
 
-{-| -}
+{-| Read a file
+-}
 read : FD -> IO String
 read (FD fd) =
     IO.make
@@ -81,7 +86,8 @@ read (FD fd) =
         (Effect.File <| Effect.Read fd)
 
 
-{-| -}
+{-| Write to a file
+-}
 write : FD -> String -> IO ()
 write (FD fd) content =
     IO.make

@@ -1,6 +1,7 @@
 module Posix.IO exposing
     ( IO, return, do, map, exitOnError
-    , Process, PosixProgram, program
+    , Process
+    , PosixProgram, program
     )
 
 {-|
@@ -13,7 +14,7 @@ module Posix.IO exposing
 
 # Create IO Program
 
-@docs Process, PosixProgram, program
+@docs Process, program PosixProgram
 
 -}
 
@@ -48,10 +49,31 @@ return a =
     IO.make (Decode.succeed a) Effect.NoOp
 
 
-{-| -}
+{-| Compose IO actions, do-notation style.
+
+    do (File.open "file.txt") <| \result ->
+    do (exitOnError result) <| \fd ->
+    do (File.write fd "Hello, World")
+
+-}
 do : IO a -> (a -> IO b) -> IO b
 do =
     IO.do
+
+
+{-| Compose IO actions, `andThen` style
+
+    File.open "file.txt"
+        |> andThen exitOnError
+        |> andthen
+            (\fd ->
+                File.write fd "Hello, World"
+            )
+
+-}
+andThen : IO a -> (a -> IO b) -> IO b
+andThen a b =
+    IO.do b a
 
 
 {-| -}
@@ -62,7 +84,7 @@ map =
 
 {-| Print to stderr and exit program on `Err`
 -}
-exitOnError : (e -> String) -> IO (Result e a) -> IO a
+exitOnError : (error -> String) -> IO (Result error a) -> IO a
 exitOnError toErrorMsg io =
     IO.do io
         (\result ->
