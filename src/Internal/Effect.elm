@@ -16,6 +16,8 @@ type Effect
 type File
     = Read Int
     | Write Int String
-    | Open String
+    | Open String String
+    | Stat String
+    | ReadDir String
 
 

@@ -133,8 +133,30 @@ effectToCmd portOut effect =
                             ]
                         }
 
-                Effect.Open filename ->
-                    portOut { fn = "fopen", args = [ Encode.string filename ] }
+                Effect.Open filename flags ->
+                    portOut
+                        { fn = "fopen"
+                        , args =
+                            [ Encode.string filename
+                            , Encode.string flags
+                            ]
+                        }
+
+                Effect.Stat filename ->
+                    portOut
+                        { fn = "fstat"
+                        , args =
+                            [ Encode.string filename
+                            ]
+                        }
+
+                Effect.ReadDir filename ->
+                    portOut
+                        { fn = "readdir"
+                        , args =
+                            [ Encode.string filename
+                            ]
+                        }
 
         Effect.NoOp ->
             callSelf (GotNextValue Encode.null)

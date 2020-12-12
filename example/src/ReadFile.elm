@@ -10,8 +10,10 @@ readFile : Process -> IO ()
 readFile process =
     case process.argv of
         [ _, filename ] ->
-            IO.do (File.open filename |> IO.exitOnError identity) <| \fd ->
-            IO.do (File.read fd) <| \content ->
+            IO.do
+                (File.contentsOf filename
+                    |> IO.exitOnError identity
+                ) <| \content ->
             IO.do (IO.print content) <| \_ ->
             IO.return ()
 

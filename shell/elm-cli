@@ -34,9 +34,34 @@ var io = {
     fread: function(fd) {
         return fs.readFileSync(fd).toString();
     },
-    fopen: function(filename) {
+    fopen: function(filename, flags) {
         try {
-            return fs.openSync(filename);
+            return fs.openSync(filename, flags);
+        } catch (e) {
+            return e.toString();
+        }
+    },
+    fstat: function(filename) {
+        try {
+            return fs.statSync(filename);
+        } catch (e) {
+            return e.toString();
+        }
+    },
+    readdir: function(dirname) {
+        try {
+            var r = fs.readdirSync(dirname, { withFileTypes: true })
+                .map(dirent => ({
+                    name: dirent.name,
+                    isDir: dirent.isDirectory(),
+                    isFile: dirent.isFile(),
+                    isSocket: dirent.isSocket(),
+                    isFifo: dirent.isFIFO(),
+                    isSymlink: dirent.isSymbolicLink(),
+                    isBlockDevice: dirent.isBlockDevice(),
+                    isCharacterDevice: dirent.isCharacterDevice(),
+                }));
+            return r;
         } catch (e) {
             return e.toString();
         }
