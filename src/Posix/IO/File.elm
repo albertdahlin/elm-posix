@@ -1,6 +1,6 @@
 module Posix.IO.File exposing
     ( Filename
-    , contentsOf, stat, Stats
+    , contentsOf, writeContentsTo, stat, Stats
     , readDir, Entry(..)
     , FD, Flag, open
     , flagRead, flagReadPlus, flagWrite, flagWritePlus, flagAppend, flagAppendPlus
@@ -15,7 +15,7 @@ module Posix.IO.File exposing
 
 @docs Filename
 
-@docs contentsOf, stat, Stats
+@docs contentsOf, writeContentsTo, stat, Stats
 
 
 # Directory IO
@@ -40,6 +40,7 @@ module Posix.IO.File exposing
 import Internal.Effect as Effect exposing (Effect)
 import Internal.IO as IO
 import Json.Decode as Decode exposing (Decoder)
+import Posix.IO
 
 
 {-| -}
@@ -246,6 +247,14 @@ contentsOf filename =
                 Err e ->
                     IO.make (Decode.succeed (Err e)) Effect.NoOp
         )
+
+{-| Write contents to a file. The Program will fail
+if there is a problem.
+-}
+writeContentsTo : Filename -> String -> IO ()
+writeContentsTo name content =
+    IO.do (open name flagWrite |> Posix.IO.exitOnError identity) <| \fd ->
+    write fd content
 
 
 {-| Directory entry
