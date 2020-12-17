@@ -1,5 +1,5 @@
 module Posix.IO exposing
-    ( IO, return, map, do, andThen, exitOnError
+    ( IO, return, map, do, andThen, combine, exitOnError
     , Process, program, PosixProgram
     )
 
@@ -8,7 +8,7 @@ module Posix.IO exposing
 
 # IO Monad
 
-@docs IO, return, map, do, andThen, exitOnError
+@docs IO, return, map, do, andThen, combine, exitOnError
 
 
 # Create IO Program
@@ -103,6 +103,23 @@ exitOnError toErrorMsg io =
                                 (Effect.Exit 255)
         )
 
+
+{-| Perform IO in sequence
+-}
+combine : List (IO a) -> IO (List a)
+combine list =
+    case list of
+        x :: xs ->
+            List.foldl
+                (\ioA ioListOfA ->
+                    IO.do ioListOfA (\listOfA -> IO.map (\a -> a :: listOfA) ioA)
+                )
+                (IO.map List.singleton x)
+                xs
+                |> IO.map List.reverse
+
+        [] ->
+            return []
 
 {-|
 
