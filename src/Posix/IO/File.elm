@@ -87,7 +87,7 @@ type alias Seekable a =
     }
 
 
-{-| Standard Int
+{-| Standard In
 -}
 stdIn : FD (Readable {})
 stdIn =
