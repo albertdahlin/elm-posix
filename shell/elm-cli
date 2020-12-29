@@ -29,23 +29,23 @@ var flags = {
 var app = elmApp.init({ flags: flags });
 var io = {
     fwrite: function(fd, content) {
-        fs.writeSync(fd, content);
+        this.send(fs.writeSync(fd, content));
     },
     fread: function(fd) {
-        return fs.readFileSync(fd).toString();
+        this.send(fs.readFileSync(fd).toString());
     },
     fopen: function(filename, flags) {
         try {
-            return fs.openSync(filename, flags);
+            this.send(fs.openSync(filename, flags));
         } catch (e) {
-            return e.toString();
+            this.send(e.toString());
         }
     },
     fstat: function(filename) {
         try {
-            return fs.statSync(filename);
+            this.send(fs.statSync(filename));
         } catch (e) {
-            return e.toString();
+            this.send(e.toString());
         }
     },
     readdir: function(dirname) {
@@ -61,10 +61,13 @@ var io = {
                     isBlockDevice: dirent.isBlockDevice(),
                     isCharacterDevice: dirent.isCharacterDevice(),
                 }));
-            return r;
+            this.send(r);
         } catch (e) {
-            return e.toString();
+            this.send(e.toString());
         }
+    },
+    sleep: function(delay) {
+        setTimeout(this.send, delay);
     },
     exit: function(status) {
         rl.close();
@@ -80,9 +83,7 @@ app.ports.send.subscribe(function(msg) {
         return;
     }
 
-    var result = fn.apply(null, msg.args);
-
-    app.ports.recv.send(result);
+    fn.apply(app.ports.recv, msg.args);
 });
 
 

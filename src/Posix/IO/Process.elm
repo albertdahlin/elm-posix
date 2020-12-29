@@ -1,11 +1,11 @@
-module Posix.IO.Process exposing (exit, print, logErr)
+module Posix.IO.Process exposing (exit, sleep, print, logErr)
 
 {-|
 
 
 # Process Operations
 
-@docs exit, print, logErr
+@docs exit, sleep, print, logErr
 
 -}
 
@@ -29,15 +29,21 @@ exit status =
         (Effect.Exit status)
 
 
-{-|
--}
+{-| -}
 print : String -> IO ()
 print s =
     File.write File.stdOut (s ++ "\n")
 
 
-{-|
--}
+{-| -}
+sleep : Float -> IO ()
+sleep d =
+    IO.make
+        (Decode.succeed ())
+        (Effect.Sleep d)
+
+
+{-| -}
 logErr : String -> IO ()
 logErr s =
     File.write File.stdErr (s ++ "\n")

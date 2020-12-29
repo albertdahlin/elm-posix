@@ -10,6 +10,7 @@ type alias IO a =
 type Effect
     = Exit Int
     | File File
+    | Sleep Float
     | NoOp
 
 

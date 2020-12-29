@@ -117,12 +117,24 @@ effectToCmd : PortOut -> Effect -> Cmd Msg
 effectToCmd portOut effect =
     case effect of
         Effect.Exit status ->
-            portOut { fn = "exit", args = [ Encode.int status ] }
+            portOut
+                { fn = "exit"
+                , args = [ Encode.int status ]
+                }
+
+        Effect.Sleep delay ->
+            portOut
+                { fn = "sleep"
+                , args = [ Encode.float delay ]
+                }
 
         Effect.File file ->
             case file of
                 Effect.Read fd ->
-                    portOut { fn = "fread", args = [ Encode.int fd ] }
+                    portOut
+                        { fn = "fread"
+                        , args = [ Encode.int fd ]
+                        }
 
                 Effect.Write fd content ->
                     portOut
