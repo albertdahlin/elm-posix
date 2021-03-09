@@ -101,8 +101,14 @@ function compileProgram(filename) {
 
     fs.writeFileSync(`${elmMain}.elm`, sourceCode);
 
+
     try{
-        childProcess.execSync(`elm make --optimize ${elmMain}.elm --output ${elmMain}.js`);
+        var debugMode = process.argv.indexOf("--debug") !== -1;
+        if (debugMode) {
+            childProcess.execSync(`elm make --debug ${elmMain}.elm --output ${elmMain}.js`);
+        } else {
+            childProcess.execSync(`elm make --optimize ${elmMain}.elm --output ${elmMain}.js`);
+        }
     } catch(e) {
         process.exit(255);
     }
