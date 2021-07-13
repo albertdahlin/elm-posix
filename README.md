@@ -1,5 +1,7 @@
 # Posix programs in Elm
 
+Write your tools and build scripts in Elm.
+
 **This is still under development**
 
 The workflow idea:
@@ -18,7 +20,7 @@ cd example
 ../shell/elm-cli src/HelloUser.elm
 ```
 
-### TODO before publishing
+### Some things to solve before publishing
 
 - Make sure it works on other OS
 - Documentation and user help
@@ -26,8 +28,8 @@ cd example
 IO effects to implement:
 - Spawning child processes
 - Executing `Cmd`, for example `Http`
+- posix Sockets / Streams, *I don't know how useful this would be*
 
-CLI args:
-- `elm-cli build <src> <target>` - Produce a node js shell script.
-- `elm-cli run <src> <args>` - Evaluate the src file
-
+CLI:
+- `elm-cli build <src> <target>` - Produce an executable node js shell script.
+- `elm-cli run <src> <args>` - Evaluate the src file.
