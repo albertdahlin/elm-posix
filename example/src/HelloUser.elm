@@ -5,7 +5,8 @@ import Posix.IO as IO exposing (IO, Process)
 import Posix.IO.Process as Proc
 import Posix.IO.File as File
 
-
+{-| This is the entry point, you can think of it as `main` in normal Elm applications.
+-}
 program : IO.PosixProgram
 program =
     IO.program helloUser
