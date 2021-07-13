@@ -2,10 +2,16 @@
 
 Write your tools and build scripts in Elm.
 
+The Elm Architecture is nice when you are writing event driven applications and long running processes.
+However, I find it a bit cumbersome when you just want to do some simple scripts and tools.
+
+This project lets you write monadic IO programs, similar to Haskell.
+If you don't know what that means, don't worry about it. Try it out or have look at the [examples] instead.
+
 **This is still under development**
 
 The workflow idea:
-- Write your Elm "CLI script" using an IO monad similar to Haskell, see [examples](https://github.com/albertdahlin/elm-posix/tree/master/example/src) and [package docs](https://elm-doc-preview.netlify.app/?repo=albertdahlin/elm-posix)
+- Write your Elm "CLI script", see [examples] and [package docs](https://elm-doc-preview.netlify.app/?repo=albertdahlin/elm-posix)
 - install the cli tool, `npm install -g albertdahlin/elm-posix` *(not published to npm yet)*
 - run `elm-cli src/YourProgram.elm`
 
@@ -32,3 +38,6 @@ IO effects to implement:
 CLI:
 - `elm-cli build <src> <target>` - Produce an executable node js shell script.
 - `elm-cli run <src> <args>` - Evaluate the src file.
+
+
+[examples]: https://github.com/albertdahlin/elm-posix/tree/master/example/src
