@@ -20,7 +20,7 @@ cd example
 ../shell/elm-cli src/HelloUser.elm
 ```
 
-### Some things to solve before publishing
+### Some things to fix before publishing
 
 - Make sure it works on other OS
 - Documentation and user help
@@ -28,7 +28,6 @@ cd example
 IO effects to implement:
 - Spawning child processes
 - Executing `Cmd`, for example `Http`
-- posix Sockets / Streams, *I don't know how useful this would be*
 
 CLI:
 - `elm-cli build <src> <target>` - Produce an executable node js shell script.
