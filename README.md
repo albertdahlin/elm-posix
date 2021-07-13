@@ -3,7 +3,7 @@
 **This is still under development**
 
 The workflow idea:
-- Write your Elm "CLI script" using an IO monad similar to Haskell, see [examples](/example/src/) and [package docs](https://elm-doc-preview.netlify.app/?repo=albertdahlin/elm-posix)
+- Write your Elm "CLI script" using an IO monad similar to Haskell, see [examples](https://github.com/albertdahlin/elm-posix/tree/master/example/src) and [package docs](https://elm-doc-preview.netlify.app/?repo=albertdahlin/elm-posix)
 - install the cli tool, `npm install -g albertdahlin/elm-posix` *(not published to npm yet)*
 - run `elm-cli src/YourProgram.elm`
 
