@@ -27,7 +27,10 @@ elm install elm/json
 
 ## Usage
 
-See [examples] for how to build and run cli programs.
+- See [examples] for how to build and run cli programs.
+- Read the package [documentation]
+
+You can also run `elm-cli` without any arguments to get usage info.
 
 ## Work in Progress
 
@@ -44,3 +47,4 @@ IO effects to implement:
 - Executing `Cmd`, for example `Http`
 
 [examples]: https://github.com/albertdahlin/elm-posix/tree/master/example
+[documentation]: https://package.elm-lang.org/packages/albertdahlin/elm-posix/latest/
