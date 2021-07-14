@@ -12,8 +12,8 @@ If you don't know what that means, don't worry about it. Try it out or have look
 
 The workflow idea:
 - Write your Elm "CLI script", see [examples] and [package docs](https://elm-doc-preview.netlify.app/?repo=albertdahlin/elm-posix)
-- install the cli tool, `npm install -g albertdahlin/elm-posix` *(not published to npm yet)*
-- run `elm-cli src/YourProgram.elm`
+- install the cli tool, `npm install -g @albertdahlin/elm-cli` *(not published to npm yet)*
+- run `elm-cli run src/YourProgram.elm`
 
 ## Work in Progress
 
@@ -34,10 +34,5 @@ cd example
 IO effects to implement:
 - Spawning child processes
 - Executing `Cmd`, for example `Http`
-
-CLI:
-- `elm-cli build <src> <target>` - Produce an executable node js shell script.
-- `elm-cli run <src> <args>` - Evaluate the src file.
-
 
 [examples]: https://github.com/albertdahlin/elm-posix/tree/master/example/src

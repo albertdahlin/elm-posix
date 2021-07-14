@@ -1,0 +1,21 @@
+{
+  "name": "@albertdahlin/elm-posix",
+  "version": "1.0.0",
+  "description": "Write CLI scripts in Elm",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": "https://github.com/albertdahlin/elm-posix.git",
+  "keywords": [
+    "elm"
+  ],
+  "author": "Albert Dahlin",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/albertdahlin/elm-posix/issues"
+  },
+  "homepage": "https://github.com/albertdahlin/elm-posix#readme",
+  "bin": {
+      "elm-cli": "bin/elm-cli"
+  }
+}
