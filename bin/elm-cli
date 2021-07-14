@@ -245,6 +245,7 @@ port module Wrapper exposing (..)
 
 
 import Json.Encode as Encode exposing (Value)
+import Posix.IO as IO
 import ${moduleName} as Cli
 
 
@@ -258,7 +259,7 @@ port send : ArgsToJs -> Cmd msg
 port recv : (Value -> msg) -> Sub msg
 
 main =
-    Cli.program recv send
+    IO.program Cli.program recv send
 `;
 }
 
