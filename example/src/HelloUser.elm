@@ -7,13 +7,8 @@ import Posix.IO.File as File
 
 {-| This is the entry point, you can think of it as `main` in normal Elm applications.
 -}
-program : IO.PosixProgram
-program =
-    IO.program helloUser
-
-
-helloUser : Process -> IO ()
-helloUser process =
+program : Process -> IO ()
+program process =
     let
         userName =
             Dict.get "USER" process.env

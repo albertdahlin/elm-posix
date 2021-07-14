@@ -10,21 +10,29 @@ If you don't know what that means, don't worry about it. Try it out or have look
 
 **This is still under development**
 
-The workflow idea:
-- Write your Elm "CLI script", see [examples] and [package docs](https://elm-doc-preview.netlify.app/?repo=albertdahlin/elm-posix)
-- install the cli tool, `npm install -g @albertdahlin/elm-cli` *(not published to npm yet)*
-- run `elm-cli run src/YourProgram.elm`
+## Installation / Setup
+
+You need `elm`, `node` and `npm` on your system.
+
+Install the cli tool:
+```
+npm install -g @albertdahlin/elm-posix
+```
+
+Install Elm dependencies in your project
+```
+elm install albertdahlin/elm-posix
+elm install elm/json
+```
+
+## Usage
+
+See [examples] for how to build and run cli programs.
 
 ## Work in Progress
 
 A proof of concept is implemented and testable (on Linux).
 There are still some things pending before publishing v1.0.
-
-Requires `node` and `elm` to be installed on your system.
-```
-cd example
-../shell/elm-cli src/HelloUser.elm
-```
 
 ### Some things to fix before publishing
 
@@ -35,4 +43,4 @@ IO effects to implement:
 - Spawning child processes
 - Executing `Cmd`, for example `Http`
 
-[examples]: https://github.com/albertdahlin/elm-posix/tree/master/example/src
+[examples]: https://github.com/albertdahlin/elm-posix/tree/master/example
