@@ -5,10 +5,15 @@ Write your tools and build scripts in Elm.
 The Elm Architecture is nice when you are writing event driven applications and long running processes.
 However, I find it a bit cumbersome when you just want to do some simple scripts and tools.
 
-This project lets you write monadic IO programs, similar to Haskell.
-If you don't know what that means, don't worry about it. Try it out or have look at the [examples] instead.
+This project lets you write monadic IO programs, similar to Haskell, and then compile them to a nodejs shell script.
 
-**This is still under development**
+For example
+```
+elm-cli make src/MyScript.elm my-script
+```
+will create an executable shell script that you can run with `./my-script`.
+
+**This is still under development and will most likely change**
 
 ## Installation / Setup
 
