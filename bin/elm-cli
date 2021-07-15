@@ -47,9 +47,6 @@ function createIo(rl) {
                 this.send(e.toString());
             }
         },
-        sleep: function(delay) {
-            setTimeout(this.send, delay);
-        },
         exit: function(status) {
             rl.close();
             process.exit(status);

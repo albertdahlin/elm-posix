@@ -9,10 +9,11 @@ module Internal.Program exposing (..)
 import Dict exposing (Dict)
 import Internal.Effect as Effect exposing (Effect, IO)
 import Internal.IO as IO
-import Internal.Process as Process exposing (Process)
+import Internal.Process exposing (Process)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode exposing (Value)
 import Task exposing (Task)
+import Process
 
 
 type alias PortIn =
@@ -91,7 +92,7 @@ init portOut io flags =
 start (IO.IO io) =
     io
         (\_ ->
-            ( Process.Process (Decode.fail "Exit")
+            ( Internal.Process.Process (Decode.fail "Exit")
             , Effect.Exit 0
             )
         )
@@ -101,7 +102,7 @@ update : PortOut -> Msg -> Model -> ( Model, Cmd Msg )
 update portOut msg model =
     case msg of
         GotNextValue value ->
-            case Process.step value model of
+            case Internal.Process.step value model of
                 Ok ( nextProcess, effect ) ->
                     ( nextProcess
                     , effectToCmd portOut effect
@@ -123,10 +124,10 @@ effectToCmd portOut effect =
                 }
 
         Effect.Sleep delay ->
-            portOut
-                { fn = "sleep"
-                , args = [ Encode.float delay ]
-                }
+            Process.sleep delay
+                |> Task.andThen
+                    (\_ -> Task.succeed <| GotNextValue Encode.null)
+                |> Task.perform identity
 
         Effect.File file ->
             case file of
