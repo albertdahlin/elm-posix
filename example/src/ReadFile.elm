@@ -6,16 +6,12 @@ import Posix.IO.File as File
 import Posix.IO.Process as Proc
 
 
-program : Process -> IO ()
+program : Process -> IO String ()
 program process =
     case process.argv of
         [ _, filename ] ->
-            IO.do
-                (File.contentsOf filename
-                    |> IO.exitOnError identity
-                ) <| \content ->
-            IO.do (Proc.print content) <| \_ ->
-            IO.return ()
+            File.contentsOf filename
+                |> IO.andThen Proc.print
 
         _ ->
             Proc.logErr ("Usage: elm-cli <program> file\n")

@@ -44,8 +44,8 @@ import Posix.IO
 
 
 {-| -}
-type alias IO a =
-    IO.IO Effect a
+type alias IO e a =
+    Posix.IO.IO e a
 
 
 {-| File Descriptor
@@ -176,7 +176,7 @@ flagWritePlus =
 
 {-| Open a file
 -}
-open : Filename -> Flag a -> IO (Result String (FD a))
+open : Filename -> Flag a -> IO String (FD a)
 open filename (Flag flag) =
     IO.make
         (Decode.oneOf
@@ -191,10 +191,10 @@ open filename (Flag flag) =
 
 {-| Read a file
 -}
-read : FD (Readable a) -> IO String
+read : FD (Readable a) -> IO x String
 read (FD fd) =
     IO.make
-        Decode.string
+        (Decode.string |> Decode.map Ok)
         (Effect.File <| Effect.Read fd)
 
 
@@ -210,7 +210,7 @@ type alias Stats =
 
 {-| Read file stats
 -}
-stat : Filename -> IO (Result String Stats)
+stat : Filename -> IO String Stats
 stat filename =
     IO.make
         (Decode.oneOf
@@ -236,24 +236,17 @@ stat filename =
 
 {-| Read the contents of a file.
 -}
-contentsOf : Filename -> IO (Result String String)
+contentsOf : Filename -> IO String String
 contentsOf filename =
-    IO.do (open filename flagRead)
-        (\result ->
-            case result of
-                Ok fd ->
-                    IO.map Ok (read fd)
+    Posix.IO.do (open filename flagRead) read
 
-                Err e ->
-                    IO.make (Decode.succeed (Err e)) Effect.NoOp
-        )
 
 {-| Write contents to a file. The Program will fail
 if there is a problem.
 -}
-writeContentsTo : Filename -> String -> IO ()
+writeContentsTo : Filename -> String -> IO String ()
 writeContentsTo name content =
-    IO.do (open name flagWrite |> Posix.IO.exitOnError identity) <| \fd ->
+    Posix.IO.do (open name flagWrite) <| \fd ->
     write fd content
 
 
@@ -267,7 +260,7 @@ type Entry
 
 {-| Read the contents of a directory.
 -}
-readDir : String -> IO (Result String (List Entry))
+readDir : String -> IO String (List Entry)
 readDir dir =
     IO.make
         (Decode.oneOf
@@ -297,8 +290,8 @@ readDir dir =
 
 {-| Write to a file
 -}
-write : FD (Writable a) -> String -> IO ()
+write : FD (Writable a) -> String -> IO x ()
 write (FD fd) content =
     IO.make
-        (Decode.succeed ())
+        (Decode.succeed <| Ok ())
         (Effect.File <| Effect.Write fd content)

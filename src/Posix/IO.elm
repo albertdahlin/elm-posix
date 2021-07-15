@@ -1,5 +1,5 @@
 module Posix.IO exposing
-    ( IO, return, map, do, andThen, combine, exitOnError
+    ( IO, return, map, do, andThen, and, combine, exitOnError
     , Process, program, PosixProgram
     )
 
@@ -8,7 +8,7 @@ module Posix.IO exposing
 
 # IO Monad
 
-@docs IO, return, map, do, andThen, combine, exitOnError
+@docs IO, return, map, do, andThen, and, combine, exitOnError
 
 
 # Create IO Program
@@ -25,8 +25,8 @@ import Json.Decode as Decode exposing (Decoder)
 
 
 {-| -}
-type alias IO a =
-    Effect.IO a
+type alias IO err a =
+    Effect.IO (Result err a)
 
 
 {-| -}
@@ -43,20 +43,34 @@ type alias PosixProgram =
 
 
 {-| -}
-return : a -> IO a
+return : a -> IO err a
 return a =
-    IO.make (Decode.succeed a) Effect.NoOp
+    IO.make (Decode.succeed (Ok a)) Effect.NoOp
+
+
+fail : err -> IO err a
+fail err =
+    IO.make (Decode.succeed (Err err)) Effect.NoOp
 
 
 {-| Compose IO actions, do-notation style.
 
-    do (File.open "file.txt" |> exitOnError identity) <| \fd ->
-    do (File.write fd "Hello, World")
+    do (File.open "file.txt" |> exitOnError identity) <|
+        \fd ->
+            do (File.write fd "Hello, World")
 
 -}
-do : IO a -> (a -> IO b) -> IO b
-do =
-    IO.do
+do : IO x a -> (a -> IO x b) -> IO x b
+do i nxt =
+    IO.do i
+        (\result ->
+            case result of
+                Ok a ->
+                    nxt a
+
+                Err e ->
+                    fail e
+        )
 
 
 {-| Compose IO actions, `andThen` style
@@ -69,20 +83,34 @@ do =
             )
 
 -}
-andThen : (a -> IO b) -> IO a -> IO b
+andThen : (a -> IO x b) -> IO x a -> IO x b
 andThen a b =
-    IO.do b a
+    do b a
 
+{-| Chain output io
+
+    Process.print "hello"
+        |> IO.and (Process.print "world")
+
+    instead of
+
+    Process.print "hello"
+        |> IO.andThen (\_ -> Process.print "world")
+
+-}
+and : IO x b -> IO x () -> IO x b
+and b a =
+    andThen (\_ -> b) a
 
 {-| -}
-map : (a -> b) -> IO a -> IO b
-map =
-    IO.map
+map : (a -> b) -> IO x a -> IO x b
+map fn =
+    IO.map (Result.map fn)
 
 
 {-| Print to stderr and exit program on `Err`
 -}
-exitOnError : (error -> String) -> IO (Result error a) -> IO a
+exitOnError : (error -> String) -> IO error a -> IO String a
 exitOnError toErrorMsg io =
     IO.do io
         (\result ->
@@ -91,35 +119,28 @@ exitOnError toErrorMsg io =
                     return a
 
                 Err e ->
-                    IO.do
-                        (IO.make
-                            (Decode.succeed ())
-                            (Effect.File <| Effect.Write 2 (toErrorMsg e))
-                        )
-                    <|
-                        \_ ->
-                            IO.make
-                                (Decode.fail "")
-                                (Effect.Exit 255)
+                    fail (toErrorMsg e)
         )
 
 
 {-| Perform IO in sequence
 -}
-combine : List (IO a) -> IO (List a)
+combine : List (IO e a) -> IO x (List (Result e a))
 combine list =
     case list of
         x :: xs ->
             List.foldl
                 (\ioA ioListOfA ->
-                    IO.do ioListOfA (\listOfA -> IO.map (\a -> a :: listOfA) ioA)
+                    IO.do ioListOfA
+                        (\listOfA -> IO.map (\a -> a :: listOfA) ioA)
                 )
                 (IO.map List.singleton x)
                 xs
-                |> IO.map List.reverse
+                |> IO.map (List.reverse >> Ok)
 
         [] ->
             return []
+
 
 {-|
 
@@ -143,6 +164,26 @@ combine list =
         IO.program helloUser
 
 -}
-program : (Process -> IO ()) -> Internal.Program.PosixProgram
-program =
+program : (Process -> IO String ()) -> Internal.Program.PosixProgram
+program makeP =
     Internal.Program.program
+        (\proc ->
+            IO.do (makeP proc)
+                (\result ->
+                    case result of
+                        Ok _ ->
+                            IO.make (Decode.succeed ()) Effect.NoOp
+
+                        Err err ->
+                            IO.do
+                                (IO.make
+                                    (Decode.succeed ())
+                                    (Effect.File <| Effect.Write 2 err)
+                                )
+                            <|
+                                \_ ->
+                                    IO.make
+                                        (Decode.fail "")
+                                        (Effect.Exit 255)
+                )
+        )

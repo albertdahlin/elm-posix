@@ -7,7 +7,7 @@ import Posix.IO.File as File
 
 {-| This is the entry point, you can think of it as `main` in normal Elm applications.
 -}
-program : Process -> IO ()
+program : Process -> IO String ()
 program process =
     let
         userName =
@@ -17,20 +17,22 @@ program process =
     print 10 userName
 
 
-print : Int -> String -> IO ()
+print : Int -> String -> IO String ()
 print n userName =
     let
         line =
             "Hello, " ++ String.fromInt n ++ " " ++ userName
     in
-    IO.do (Proc.sleep 100) <| \_ ->
-    IO.do (Proc.print line) <| \_ ->
+    Proc.sleep 100
+        |> IO.and (Proc.print line)
+        |> IO.and
+            (
+                if n <= 1 then
+                    IO.return ()
 
-    if n <= 1 then
-        IO.return ()
-
-    else
-        print (n - 1) userName
+                else
+                    print (n - 1) userName
+            )
 
 
 
