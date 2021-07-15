@@ -241,19 +241,12 @@ function wrapElmProgram(moduleName) {
 port module Wrapper exposing (..)
 
 
-import Json.Encode as Encode exposing (Value)
 import Posix.IO as IO
 import ${moduleName} as Cli
 
 
-type alias ArgsToJs =
-    { fn : String
-    , args : List Value
-    }
-
-
-port send : ArgsToJs -> Cmd msg
-port recv : (Value -> msg) -> Sub msg
+port send : IO.PortOut msg
+port recv : IO.PortIn msg
 
 main =
     IO.program Cli.program recv send

@@ -16,12 +16,12 @@ import Task exposing (Task)
 import Process
 
 
-type alias PortIn =
-    (Value -> Msg) -> Sub Msg
+type alias PortIn msg =
+    (Value -> msg) -> Sub msg
 
 
-type alias PortOut =
-    ArgsToJs -> Cmd Msg
+type alias PortOut msg =
+    ArgsToJs -> Cmd msg
 
 
 type alias ArgsToJs =
@@ -40,7 +40,7 @@ type alias Model =
 
 {-| -}
 type alias PosixProgram =
-    PortIn -> PortOut -> Program Flags Model Msg
+    PortIn Msg -> PortOut Msg -> Program Flags Model Msg
 
 
 {-| -}
@@ -68,7 +68,7 @@ program makeIo portIn portOut =
         }
 
 
-init : PortOut -> (Env -> IO ()) -> Flags -> ( Model, Cmd Msg )
+init : PortOut Msg -> (Env -> IO ()) -> Flags -> ( Model, Cmd Msg )
 init portOut io flags =
     let
         env =
@@ -98,7 +98,7 @@ start (IO.IO io) =
         )
 
 
-update : PortOut -> Msg -> Model -> ( Model, Cmd Msg )
+update : PortOut Msg -> Msg -> Model -> ( Model, Cmd Msg )
 update portOut msg model =
     case msg of
         GotNextValue value ->
@@ -114,7 +114,7 @@ update portOut msg model =
                     )
 
 
-effectToCmd : PortOut -> Effect -> Cmd Msg
+effectToCmd : PortOut Msg -> Effect -> Cmd Msg
 effectToCmd portOut effect =
     case effect of
         Effect.Exit status ->
@@ -181,6 +181,6 @@ callSelf msg =
         |> Task.perform identity
 
 
-subscriptions : PortIn -> Model -> Sub Msg
+subscriptions : PortIn Msg -> Model -> Sub Msg
 subscriptions portIn model =
     portIn GotNextValue

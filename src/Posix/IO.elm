@@ -1,6 +1,6 @@
 module Posix.IO exposing
     ( IO, return, map, do, andThen, and, combine, exitOnError
-    , Process, program, PosixProgram
+    , Process, program, PosixProgram, PortIn, PortOut
     )
 
 {-|
@@ -13,7 +13,7 @@ module Posix.IO exposing
 
 # Create IO Program
 
-@docs Process, program, PosixProgram
+@docs Process, program, PosixProgram, PortIn, PortOut
 
 -}
 
@@ -41,6 +41,15 @@ type alias Process =
 type alias PosixProgram =
     Internal.Program.PosixProgram
 
+
+{-| -}
+
+type alias PortIn msg =
+    Internal.Program.PortIn msg
+
+{-| -}
+type alias PortOut msg =
+    Internal.Program.PortOut msg
 
 {-| -}
 return : a -> IO err a
