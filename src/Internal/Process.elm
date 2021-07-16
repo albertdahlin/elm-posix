@@ -122,8 +122,8 @@ subscriptions portIn model =
     portIn GotValue
 
 
-program : (Env -> Proc) -> PosixProgram
-program makeIo portIn portOut =
+makeProgram : (Env -> Proc) -> PosixProgram
+makeProgram makeIo portIn portOut =
     Platform.worker
         { init = init portOut makeIo
         , update = update portOut

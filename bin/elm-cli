@@ -254,7 +254,7 @@ port send : IO.PortOut msg
 port recv : IO.PortIn msg
 
 main =
-    IO.program Cli.program recv send
+    IO.makeProgram Cli.program recv send
 `;
 }
 
@@ -268,7 +268,7 @@ const childProcess = require('child_process');
 const readline = require('readline');
 const os = require('os');
 const tmpDir = os.tmpdir();
-const crypto = require(crypto);
+const crypto = require('crypto');
 
 
 ${elm}

@@ -4,7 +4,7 @@ module Posix.IO exposing
     , map, andThen, and, combine
     , mapError, recover
     , performTask, attemptTask, callJs, ArgsToJs
-    , program, Process, PortIn, PortOut
+    , makeProgram, Process, PortIn, PortOut
     )
 
 {-|
@@ -37,7 +37,7 @@ module Posix.IO exposing
 
 # Program
 
-@docs program, Process, PortIn, PortOut
+@docs makeProgram, Process, PortIn, PortOut
 
 -}
 
@@ -100,7 +100,8 @@ none =
     return ()
 
 
-{-| -}
+{-|
+-}
 printLn : String -> IO x ()
 printLn str =
     print (str ++ "\n")
@@ -116,21 +117,28 @@ print str =
         (Decode.succeed ())
 
 
-{-| -}
+{-| Sleep process execution in milliseconds.
+-}
 sleep : Float -> IO x ()
 sleep delay =
     Process.sleep delay
         |> performTask
 
 
-{-| -}
+{-| Perform a task
+
+    getTime : IO x Time.Posix
+    getTime =
+        performTask Time.now
+-}
 performTask : Task Never a -> IO x a
 performTask task =
     Proc.PerformTask task
         |> embend
 
 
-{-| -}
+{-| Attempt a Task
+-}
 attemptTask : Task err ok -> IO err ok
 attemptTask task =
     \next ->
@@ -142,14 +150,28 @@ attemptTask task =
             |> Proc.Proc
 
 
-{-| -}
+{-| Used internally for now.
+-}
 callJs : ArgsToJs -> Decoder a -> IO x a
 callJs args decoder =
     Proc.CallJs args decoder
         |> embend
 
 
-{-| -}
+{-| Generate a seed than can be used with `Random.step` from elm/random.
+This is a workaround for the `Random` module not supporting creating Tasks.
+
+Uses NodeJs [crypto.randomBytes()](https://nodejs.org/dist/latest-v14.x/docs/api/crypto.html#crypto_crypto_randombytes_size_callback) to generate a 32bit seed.
+
+    roll : IO x Int
+    roll =
+        IO.randomSeed
+            |> IO.map
+                (Random.step (Random.int 1 6)
+                    |> Tuple.first
+                )
+
+-}
 randomSeed : IO x Random.Seed
 randomSeed =
     callJs
@@ -159,7 +181,9 @@ randomSeed =
         (Decode.int |> Decode.map Random.initialSeed)
 
 
-{-| -}
+{-| Exit to shell with a status code
+
+-}
 exit : Int -> IO x ()
 exit status =
     callJs
@@ -182,7 +206,16 @@ andThen =
     Cont.andThen
 
 
-{-| -}
+{-| Instead of:
+
+    sleep 100
+        |> andThen (\_ -> printLn "Hello")
+
+`and` allows you to do:
+
+    sleep 100
+        |> and (printLn "Hello")
+-}
 and : IO x b -> IO x a -> IO x b
 and fn io =
     Cont.andThen (\_ -> fn) io
@@ -212,10 +245,18 @@ recover fn io =
     Cont.recover fn io
 
 
-{-| -}
-program : (Process -> IO String ()) -> Proc.PosixProgram
-program makeIO =
-    Proc.program
+{-| Used by `elm-cli` to wrap your program.
+
+Create your own program by defining `program` in your module.
+
+    program : Process -> IO String ()
+    program process =
+        printLn "Hello, world!"
+
+-}
+makeProgram : (Process -> IO String ()) -> Proc.PosixProgram
+makeProgram makeIO =
+    Proc.makeProgram
         (\env ->
             let
                 io =
