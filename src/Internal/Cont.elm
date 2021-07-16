@@ -10,26 +10,43 @@ type alias Cont r a =
 {-| -}
 return : a -> Cont r a
 return a =
-    \a2r -> a2r a
+    \a_r -> a_r a
 
 
 {-| -}
 andThen : (a -> Cont r b) -> Cont r a -> Cont r b
-andThen a2b2r2r a2r2r =
-    \b2r ->
-        a2r2r
-            (\a2r ->
-                a2b2r2r a2r b2r
+andThen a_br_r ar_r =
+    \b_r ->
+        ar_r
+            (\a_r ->
+                a_br_r a_r b_r
             )
 
 
 {-| -}
 run : (a -> r) -> Cont r a -> r
-run a2r a2r2r =
-    a2r2r a2r
+run f c =
+    c f
 
 
 {-| -}
 map : (a -> b) -> Cont r a -> Cont r b
-map a2b a2r2r =
-    \b2r -> a2r2r (b2r << a2b)
+map f c =
+    \k -> c (k << f)
+
+
+{-| -}
+andMap : Cont r a -> Cont r (a -> b) -> Cont r b
+andMap c f =
+    \k -> f (\g -> c (\a -> k (g a)))
+
+
+combine : List (Cont r a) -> Cont r (List a)
+combine =
+    List.foldl
+        (\c st ->
+            andThen (\a -> map ((::) a) st) c
+        )
+        (return [])
+        >> map List.reverse
+

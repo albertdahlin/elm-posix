@@ -1,7 +1,7 @@
 module Posix.IO exposing
     ( IO, return, fail, none
     , print, printLn, sleep, randomSeed, exit
-    , map, andThen, and
+    , map, andThen, and, combine
     , mapError, recover
     , performTask, attemptTask, callJs, ArgsToJs
     , program, Process, PortIn, PortOut
@@ -22,7 +22,7 @@ module Posix.IO exposing
 
 # Transforming IO
 
-@docs map, andThen, and
+@docs map, andThen, and, combine
 
 
 # Handle Errors
@@ -178,8 +178,8 @@ embend handler =
 
 {-| -}
 andThen : (a -> IO x b) -> IO x a -> IO x b
-andThen fn io =
-    Cont.andThen fn io
+andThen =
+    Cont.andThen
 
 
 {-| -}
@@ -190,20 +190,15 @@ and fn io =
 
 {-| -}
 map : (a -> b) -> IO x a -> IO x b
-map fn io =
-    Cont.map fn io
+map =
+    Cont.map
 
 
-{- 
+{-| -}
 combine : List (IO err ok) -> IO err (List ok)
-combine list =
-    List.foldl
-        (\io lst1 ->
-        )
-        []
-        list
+combine =
+    Cont.combine
 
--}
 
 {-| -}
 mapError : (x -> y) -> IO x a -> IO y a

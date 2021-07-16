@@ -51,3 +51,13 @@ recover handle =
                 Err err ->
                     handle err
         )
+
+
+combine : List (Cont r x a) -> Cont r x (List a)
+combine =
+    List.foldl
+        (\c st ->
+            andThen (\a -> map ((::) a) st) c
+        )
+        (return [])
+        >> map List.reverse

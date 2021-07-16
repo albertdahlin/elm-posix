@@ -1,7 +1,5 @@
 module Clock exposing (..)
 
-
-import Dict exposing (Dict)
 import Posix.IO as IO exposing (IO)
 import Time
 
