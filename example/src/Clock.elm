@@ -2,26 +2,25 @@ module Clock exposing (..)
 
 
 import Dict exposing (Dict)
-import Posix.IO as IO exposing (IO, Process)
-import Posix.IO.Process as Proc
+import Posix.IO as IO exposing (IO)
 import Time
 
 
 {-| This is the entry point, you can think of it as `main` in normal Elm applications.
 -}
-program : Process -> IO String ()
-program process =
-    Proc.printLn "Press Ctrl+C two times to exit"
-        |> IO.and Proc.here
+program : a -> IO String ()
+program _ =
+    IO.printLn "Press Ctrl+C to exit."
+        |> IO.and (IO.performTask Time.here)
         |> IO.andThen (\zone -> printTime zone ())
 
 
 printTime : Time.Zone -> () -> IO String ()
 printTime zone _ =
-    Proc.now
-        |> IO.map (toHHMMSS Time.utc)
-        |> IO.andThen Proc.printLn
-        |> IO.and (Proc.sleep 1000)
+    IO.performTask Time.now
+        |> IO.map (toHHMMSS zone)
+        |> IO.andThen IO.printLn
+        |> IO.and (IO.sleep 1000)
         |> IO.andThen (printTime zone)
 
 
@@ -46,4 +45,3 @@ toHHMMSS zone posix =
     , pad s
     ]
         |> String.join ":"
-
