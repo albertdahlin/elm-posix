@@ -5,14 +5,14 @@
     "license": "MIT",
     "version": "1.0.2",
     "exposed-modules": [
-        "Posix.IO",
-        "Posix.IO.Process",
-        "Posix.IO.File"
+        "Posix.IO"
     ],
     "elm-version": "0.19.0 <= v < 0.20.0",
     "dependencies": {
         "elm/core": "1.0.1 <= v < 2.0.0",
-        "elm/json": "1.1.0 <= v < 2.0.0"
+        "elm/json": "1.1.0 <= v < 2.0.0",
+        "elm/random": "1.0.0 <= v < 2.0.0",
+        "elm/time": "1.0.0 <= v < 2.0.0"
     },
     "test-dependencies": {}
 }

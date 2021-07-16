@@ -1,4 +1,4 @@
-module HelloUser exposing (program)
+module GuessNumber exposing (..)
 
 import Dict exposing (Dict)
 import Posix.IO as IO exposing (IO, Process)

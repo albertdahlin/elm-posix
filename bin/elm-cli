@@ -5,9 +5,10 @@ const childProcess = require('child_process');
 const readline = require('readline');
 const os = require('os');
 const tmpDir = os.tmpdir();
+const crypto = require('crypto');
 
 const createIoSource = `
-function createIo(rl) {
+function createIo(rl, crypto) {
     return {
         fwrite: function(fd, content) {
             this.send(fs.writeSync(fd, content));
@@ -46,6 +47,10 @@ function createIo(rl) {
             } catch (e) {
                 this.send(e.toString());
             }
+        },
+        randomSeed: function() {
+            const seed = crypto.randomBytes(4).readInt32LE();
+            this.send(seed);
         },
         exit: function(status) {
             rl.close();
@@ -86,7 +91,7 @@ function start(elmApp, flags) {
       input: process.stdin,
       output: process.stdout
     });
-    const io = createIo(rl);
+    const io = createIo(rl, crypto);
     const app = elmApp.init({ flags: flags });
 
     app.ports.send.subscribe(function(msg) {
@@ -206,8 +211,8 @@ function compileProgram(args) {
     fs.writeFileSync(`${elmMain}.elm`, sourceCode);
 
     try {
-        if (args.debug) {
-            childProcess.execSync(`elm make --debug ${elmMain}.elm --output ${elmMain}.js`);
+        if (args.opt.debug) {
+            childProcess.execSync(`elm make ${elmMain}.elm --output ${elmMain}.js`);
         } else {
             childProcess.execSync(`elm make --optimize ${elmMain}.elm --output ${elmMain}.js`);
         }
@@ -263,6 +268,7 @@ const childProcess = require('child_process');
 const readline = require('readline');
 const os = require('os');
 const tmpDir = os.tmpdir();
+const crypto = require(crypto);
 
 
 ${elm}
@@ -283,7 +289,7 @@ const rl = readline.createInterface({
 });
 
 
-const io = createIo(rl);
+const io = createIo(rl, crypto);
 const flags = {
     argv: process.argv.slice(1),
     pid: process.pid,
