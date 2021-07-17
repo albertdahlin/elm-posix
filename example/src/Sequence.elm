@@ -1,5 +1,7 @@
 module Sequence exposing (..)
 
+{-| A simple example to show how `combine` can be used
+-}
 import Posix.IO as IO exposing (IO)
 import Random
 

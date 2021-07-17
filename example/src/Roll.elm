@@ -1,5 +1,7 @@
 module Roll exposing (..)
 
+{-| Rolls a randum number between 1 and 6.
+-}
 import Posix.IO as IO exposing (IO)
 import Random
 

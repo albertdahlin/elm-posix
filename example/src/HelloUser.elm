@@ -1,5 +1,8 @@
 module HelloUser exposing (..)
 
+{-| Prints the user name on the terminal.
+
+-}
 import Dict exposing (Dict)
 import Posix.IO as IO exposing (IO)
 
