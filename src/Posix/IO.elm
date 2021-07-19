@@ -3,7 +3,8 @@ module Posix.IO exposing
     , print, printLn, sleep, randomSeed, exit
     , map, andMap, andThen, and, combine
     , mapError, recover
-    , performTask, attemptTask, callJs, ArgsToJs
+    , performTask, attemptTask
+    , callJs
     , makeProgram, Process, PortIn, PortOut
     )
 
@@ -11,6 +12,12 @@ module Posix.IO exposing
 
 
 # Create IO
+
+The `IO err ok` type is very similar in concept to `Task err ok`. The first parameter is the error
+value, the second value is the "return" value of an IO-operation.
+
+A program must have the type `IO String ()`. The error parameter must have type `String`.
+This  allows the runtime to print error message to std err in case of a problem.
 
 @docs IO, return, fail, none
 
@@ -30,9 +37,14 @@ module Posix.IO exposing
 @docs mapError, recover
 
 
-# Low Level
+# Tasks
 
-@docs performTask, attemptTask, callJs, ArgsToJs
+@docs performTask, attemptTask
+
+
+# Javascript Interop
+
+@docs callJs
 
 
 # Program
@@ -75,13 +87,6 @@ type alias Process =
 
 
 {-| -}
-type alias ArgsToJs =
-    { fn : String
-    , args : List Value
-    }
-
-
-{-| -}
 return : a -> IO err a
 return a =
     Task.succeed a
@@ -110,9 +115,8 @@ printLn str =
 print : String -> IO x ()
 print str =
     callJs
-        { fn = "fwrite"
-        , args = [ Encode.int 1, Encode.string str ]
-        }
+        "fwrite"
+        [ Encode.int 1, Encode.string str ]
         (Decode.succeed ())
 
 
@@ -150,11 +154,47 @@ attemptTask task =
             |> Proc.Proc
 
 
-{-| Used internally for now.
+{-| Call a synchronous function in Javascript land.
+
+This works by sending out a message through a port. The Javascript implementation
+will then send the return value back through another port.
+```sh
+callJs <fn> <args> <result decoder>
+```
+
+
+### Example
+
+js/my-functions.js
+
+```javascript
+module.exports = {
+    addOne: function(num) {
+        this.send(num + 1);
+    },
+}
+```
+
+src/MyModule.elm
+
+    addOne : Int -> IO x Int
+    addOne n =
+        IO.callJs
+            "addOne"
+            [ Encode.int n
+            ]
+            Decode.int
+
+Run like this:
+
+```sh
+elm.cli run --ext js/my-functions.js src/MyModule.elm
+```
+
 -}
-callJs : ArgsToJs -> Decoder a -> IO x a
-callJs args decoder =
-    Proc.CallJs args decoder
+callJs : String -> List Value -> Decoder a -> IO x a
+callJs fn args decoder =
+    Proc.CallJs { fn = fn, args = args } decoder
         |> embend
 
 
@@ -174,10 +214,8 @@ Uses NodeJs [crypto.randomBytes()](https://nodejs.org/dist/latest-v14.x/docs/api
 -}
 randomSeed : IO x Random.Seed
 randomSeed =
-    callJs
-        { fn = "randomSeed"
-        , args = []
-        }
+    callJs "randomSeed"
+        []
         (Decode.int |> Decode.map Random.initialSeed)
 
 
@@ -186,9 +224,8 @@ randomSeed =
 exit : Int -> IO x ()
 exit status =
     callJs
-        { fn = "exit"
-        , args = [ Encode.int status ]
-        }
+        "exit"
+        [ Encode.int status ]
         (Decode.fail "")
 
 
@@ -234,6 +271,7 @@ map =
         IO.return fn
             |> IO.andMap a
             |> IO.andMap b
+
 -}
 andMap : IO x a -> IO x (a -> b) -> IO x b
 andMap =
