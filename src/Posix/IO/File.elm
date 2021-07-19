@@ -3,7 +3,6 @@ module Posix.IO.File exposing
     , read, read_, ReadError(..)
     , write, write_, WriteError(..)
     , Option, create, append, exclusive
-    , delete, copy, rename
     )
 
 {-| File IO can fail for many reasons. If there is an IO problem you basically have two
@@ -31,11 +30,6 @@ with a typed error, the other fails with an error message.
 ## Write Options
 
 @docs Option, create, append, exclusive
-
-
-# Other operations
-
-@docs delete, copy, rename
 
 -}
 
@@ -114,19 +108,4 @@ exclusive =
     Append
 
 
-{-| -}
-delete : Filename -> IO String ()
-delete name =
-    IO.return ()
 
-
-{-| -}
-copy : Filename -> Filename -> IO String ()
-copy src target =
-    IO.return ()
-
-
-{-| -}
-rename : Filename -> Filename -> IO String ()
-rename src target =
-    IO.return ()
