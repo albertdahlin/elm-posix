@@ -1,7 +1,7 @@
 module Posix.IO exposing
     ( IO, return, fail, none
     , print, printLn, sleep, randomSeed, exit
-    , map, andThen, and, combine
+    , map, andMap, andThen, and, combine
     , mapError, recover
     , performTask, attemptTask, callJs, ArgsToJs
     , makeProgram, Process, PortIn, PortOut
@@ -22,7 +22,7 @@ module Posix.IO exposing
 
 # Transforming IO
 
-@docs map, andThen, and, combine
+@docs map, andMap, andThen, and, combine
 
 
 # Handle Errors
@@ -100,8 +100,7 @@ none =
     return ()
 
 
-{-|
--}
+{-| -}
 printLn : String -> IO x ()
 printLn str =
     print (str ++ "\n")
@@ -130,6 +129,7 @@ sleep delay =
     getTime : IO x Time.Posix
     getTime =
         performTask Time.now
+
 -}
 performTask : Task Never a -> IO x a
 performTask task =
@@ -182,7 +182,6 @@ randomSeed =
 
 
 {-| Exit to shell with a status code
-
 -}
 exit : Int -> IO x ()
 exit status =
@@ -215,6 +214,7 @@ andThen =
 
     sleep 100
         |> and (printLn "Hello")
+
 -}
 and : IO x b -> IO x a -> IO x b
 and fn io =
@@ -225,6 +225,19 @@ and fn io =
 map : (a -> b) -> IO x a -> IO x b
 map =
     Cont.map
+
+
+{-| Applicative
+
+    map2 : (a -> b -> c) -> IO x a -> IO x b -> IO x c
+    map2 fn a b =
+        IO.return fn
+            |> IO.andMap a
+            |> IO.andMap b
+-}
+andMap : IO x a -> IO x (a -> b) -> IO x b
+andMap =
+    Cont.andMap
 
 
 {-| -}

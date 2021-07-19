@@ -61,3 +61,26 @@ combine =
         )
         (return [])
         >> map List.reverse
+
+
+{-| -}
+andMap : Cont r x a -> Cont r x (a -> b) -> Cont r x b
+andMap c f =
+    \k ->
+        f
+            (\g ->
+                c
+                    (\a ->
+                        k (resultAndMap a g)
+                    )
+            )
+
+
+resultAndMap : Result x a -> Result x (a -> b) -> Result x b
+resultAndMap ra rfn =
+    case ( ra, rfn ) of
+        ( _, Err x ) ->
+            Err x
+
+        ( o, Ok fn ) ->
+            Result.map fn o
