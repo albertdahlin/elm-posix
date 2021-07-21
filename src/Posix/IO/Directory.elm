@@ -1,29 +1,42 @@
 module Posix.IO.Directory exposing
-    ( Path, Pattern
-    , Node, Dir, File, pathOf
-    , file, dir, Entry(..), resolve, list, files
-    , delete, copy, rename, symlink
+    ( Path, Entry, resolve, absolutePath, fileType, FileType(..)
+    , stat, Stat
+    , Pattern, list
+    , delete, copy, rename, symlink, mkdir
+    , Permission, Mask, setPermission, addPermission, removePermission
     )
 
 {-|
 
-@docs Path, Pattern
 
-@docs Node, Dir, File, pathOf
+# Directory Entry
+
+@docs Path, Entry, resolve, absolutePath, fileType, FileType
+
+
+# File Stat
+
+@docs stat, Stat
 
 
 # Directory Contents
 
-@docs file, dir, Entry, resolve, list, files
+@docs Pattern, list
 
 
 # Directory Operations
 
-@docs delete, copy, rename, symlink
+@docs delete, copy, rename, symlink, mkdir
+
+
+# Permissions
+
+@docs Permission, Mask, setPermission, addPermission, removePermission
 
 -}
 
 import Posix.IO as IO exposing (IO)
+import Time
 
 
 {-| -}
@@ -38,42 +51,41 @@ type alias Pattern =
 
 
 {-| -}
-type Node a
-    = NNode
-
-
-{-| -}
-type File
-    = FFile
-
-
-{-| -}
-type Dir
-    = DDir
-
-
-{-| -}
 type Entry
-    = File (Node File)
-    | Dir (Node Dir)
+    = Entry DirEntry
 
 
 {-| -}
-pathOf : Node a -> Path
-pathOf f =
-    ""
+type alias DirEntry =
+    { type_ : FileType
+    , absolutePath : Path
+    }
 
 
 {-| -}
-file : Path -> IO String (Node File)
-file name =
-    IO.fail ""
+type alias Stat =
+    { type_ : FileType
+    , mode : Permission
+    , owner : Int
+    , group : Int
+    , size : Int
+    , lastAccessed : Time.Posix
+    , lastModified : Time.Posix
+    , lastStatusChanged : Time.Posix
+    , createdAt : Time.Posix
+    , absolutePath : Path
+    }
 
 
 {-| -}
-dir : Path -> IO String (Node Dir)
-dir name =
-    IO.fail ""
+type FileType
+    = BlockDevice
+    | CharacterDevice
+    | Dir
+    | FIFO
+    | File
+    | Socket
+    | SymbolicLink
 
 
 {-| -}
@@ -83,15 +95,35 @@ resolve path =
 
 
 {-| -}
+absolutePath : Entry -> Path
+absolutePath f =
+    ""
+
+
+{-| -}
+fileType : Entry -> FileType
+fileType (Entry dirEnt) =
+    dirEnt.type_
+
+
+{-| -}
+stat : Entry -> Stat
+stat f =
+    Debug.todo ""
+
+
+
+-- DIRECTORY CONTENTS
+
+
+{-| -}
 list : Pattern -> IO String (List Entry)
 list name =
     IO.return []
 
 
-{-| -}
-files : Node Dir -> IO String (List (Node File))
-files d =
-    IO.return []
+
+-- DIRECTORY OPERATIONS
 
 
 {-| -}
@@ -115,4 +147,48 @@ rename src target =
 {-| -}
 symlink : Path -> Path -> IO String ()
 symlink src target =
+    IO.return ()
+
+
+{-| -}
+mkdir : Path -> IO String ()
+mkdir target =
+    IO.return ()
+
+
+
+-- PERMISSIONS
+
+
+{-| -}
+type alias Permission =
+    { owner : Mask
+    , group : Mask
+    , all : Mask
+    }
+
+
+{-| -}
+type alias Mask =
+    { read : Bool
+    , write : Bool
+    , execute : Bool
+    }
+
+
+{-| -}
+setPermission : Permission -> Pattern -> IO String ()
+setPermission perm pat =
+    IO.return ()
+
+
+{-| -}
+addPermission : Permission -> Pattern -> IO String ()
+addPermission perm pat =
+    IO.return ()
+
+
+{-| -}
+removePermission : Permission -> Pattern -> IO String ()
+removePermission perm pat =
     IO.return ()
