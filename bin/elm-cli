@@ -6,6 +6,7 @@ const readline = require('readline');
 const os = require('os');
 const tmpDir = os.tmpdir();
 const crypto = require('crypto');
+const XMLHttpRequest = require('../js/xmlhttprequest.js');
 
 const createIoSource = `
 function createIo(rl, crypto) {
@@ -222,6 +223,8 @@ function compileProgram(args) {
     }
 
     fs.unlinkSync(`${elmMain}.elm`);
+    xmlHttpPolyfill = fs.readFileSync('../js/xmlhttprequest.js');
+    fs.appendFileSync(`${elmMain}.js`, xmlHttpPolyfill);
 
     return `${elmMain}.js`;
 

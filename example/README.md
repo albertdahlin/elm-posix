@@ -22,6 +22,16 @@ Prints the time on the terminal every second.
 elm-cli run src/Clock.elm
 ```
 
+## Http Request
+
+Fetch data using the Http module from elm/http.
+
+[src/HttpRequest.elm](src/HttpRequest.elm)
+
+```
+elm-cli run src/HttpRequest.elm
+```
+
 ## Roll
 
 Rolls a random number.

@@ -16,7 +16,8 @@
   },
   "homepage": "https://github.com/albertdahlin/elm-posix#readme",
   "files": [
-    "bin/elm-cli"
+    "bin/elm-cli",
+    "js/xmlhttprequest.js"
   ],
   "bin": {
       "elm-cli": "bin/elm-cli"

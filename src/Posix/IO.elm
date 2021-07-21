@@ -17,7 +17,7 @@ The `IO err ok` type is very similar in concept to `Task err ok`. The first para
 value, the second value is the "return" value of an IO-operation.
 
 A program must have the type `IO String ()`. The error parameter must have type `String`.
-This  allows the runtime to print error message to std err in case of a problem.
+This allows the runtime to print error message to std err in case of a problem.
 
 @docs IO, return, fail, none
 
@@ -140,7 +140,34 @@ performTask task =
         |> embend
 
 
-{-| Attempt a Task
+{-| Attempt a Task that can fail.
+
+For example you can fetch data using the [elm/http](https://package.elm-lang.org/packages/elm/http/latest/Http) package.
+
+    import Http
+
+    fetch : IO String String
+    fetch =
+        Http.riskyTask
+            { method = "GET"
+            , headers = []
+            , url = "http://example.com"
+            , body = Http.emptyBody
+            , resolver = Http.stringResolver stringBody
+            , timeout = Just 10
+            }
+            |> attemptTask
+
+
+    stringBody : Http.Response String -> Result String String
+    stringBody response =
+        case response of
+            Http.GoodStatus_ metaData body ->
+                Ok body
+
+            _ ->
+                Err "Problem"
+
 -}
 attemptTask : Task err ok -> IO err ok
 attemptTask task =
@@ -157,6 +184,7 @@ attemptTask task =
 
 This works by sending out a message through a port. The Javascript implementation
 will then send the return value back through another port.
+
 ```sh
 callJs <fn> <args> <result decoder>
 ```
@@ -195,7 +223,6 @@ callJs : String -> List Value -> Decoder a -> IO x a
 callJs fn args decoder =
     Proc.CallJs { fn = fn, args = args } decoder
         |> embend
-
 
 
 {-| Exit to shell with a status code
