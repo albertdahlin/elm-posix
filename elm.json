@@ -8,6 +8,7 @@
         "Posix.IO",
         "Posix.IO.File",
         "Posix.IO.Directory",
+        "Posix.IO.Process",
         "Posix.IO.Random"
     ],
     "elm-version": "0.19.0 <= v < 0.20.0",
