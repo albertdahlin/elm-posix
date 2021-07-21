@@ -1,23 +1,34 @@
 module Roll exposing (..)
 
-{-| Rolls a randum number between 1 and 6.
+{-| Rolls a random number.
 -}
+
 import Posix.IO as IO exposing (IO)
+import Posix.IO.Random
 import Random
 
 
 {-| This is the entry point, you can think of it as `main` in normal Elm applications.
 -}
-program : a -> IO String ()
-program _ =
-    IO.randomSeed
+program : IO.Process -> IO String ()
+program process =
+    let
+        highLimit =
+            parseHighValue process.argv
+                |> Maybe.withDefault 100
+    in
+    Posix.IO.Random.generate (Random.int 1 highLimit)
         |> IO.andThen
-            (\seed ->
-                Random.step (Random.int 1 6) seed
-                    |> Tuple.first
-                    |> String.fromInt
-                    |> IO.printLn
+            (\randomNumber ->
+                IO.printLn (String.fromInt randomNumber ++ " (" ++ String.fromInt highLimit ++ ")")
             )
 
 
+parseHighValue : List String -> Maybe Int
+parseHighValue args =
+    case args of
+        [ _, str ] ->
+            String.toInt str
 
+        _ ->
+            Nothing

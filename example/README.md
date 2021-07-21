@@ -24,12 +24,15 @@ elm-cli run src/Clock.elm
 
 ## Roll
 
-Rolls a randum number between 1 and 6.
+Rolls a random number.
 
 [src/Roll.elm](src/Roll.elm)
 
-```
-elm-cli run src/Roll.elm
+```sh
+$ elm-cli run src/Roll.elm
+54 (100)
+$ elm-cli run src/Roll.elm 1337
+1122 (1337)
 ```
 
 ## Sequence
@@ -39,5 +42,5 @@ A simple example to show how `combine` can be used.
 [src/Sequence.elm](src/Sequence.elm)
 
 ```
-elm-cli run src/Sequence.elm
+$ elm-cli run src/Sequence.elm
 ```

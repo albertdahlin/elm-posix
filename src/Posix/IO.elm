@@ -1,6 +1,6 @@
 module Posix.IO exposing
     ( IO, return, fail, none
-    , print, printLn, sleep, randomSeed, exit
+    , print, printLn, sleep, exit
     , map, andMap, andThen, and, combine
     , mapError, recover
     , performTask, attemptTask
@@ -24,7 +24,7 @@ This  allows the runtime to print error message to std err in case of a problem.
 
 # Basic IO
 
-@docs print, printLn, sleep, randomSeed, exit
+@docs print, printLn, sleep, exit
 
 
 # Transforming IO
@@ -59,7 +59,6 @@ import Internal.Process as Proc exposing (Proc)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode exposing (Value)
 import Process
-import Random
 import Task exposing (Task)
 
 
@@ -197,26 +196,6 @@ callJs fn args decoder =
     Proc.CallJs { fn = fn, args = args } decoder
         |> embend
 
-
-{-| Generate a seed than can be used with `Random.step` from elm/random.
-This is a workaround for the `Random` module not supporting creating Tasks.
-
-Uses NodeJs [crypto.randomBytes()](https://nodejs.org/dist/latest-v14.x/docs/api/crypto.html#crypto_crypto_randombytes_size_callback) to generate a 32bit seed.
-
-    roll : IO x Int
-    roll =
-        IO.randomSeed
-            |> IO.map
-                (Random.step (Random.int 1 6)
-                    |> Tuple.first
-                )
-
--}
-randomSeed : IO x Random.Seed
-randomSeed =
-    callJs "randomSeed"
-        []
-        (Decode.int |> Decode.map Random.initialSeed)
 
 
 {-| Exit to shell with a status code
