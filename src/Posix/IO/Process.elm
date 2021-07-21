@@ -17,6 +17,7 @@ module Posix.IO.Process exposing
 
 -}
 
+import Internal.Stream as Internal
 import Posix.IO as IO exposing (IO)
 
 
@@ -56,6 +57,13 @@ execFile cmd args =
 
 {-| Make program fail if the status code is not zero.
 Also unpacks stdOut and stdErr as `IO <stdErr> <stdOut>`.
+
+    exec "whoami"
+        |> failOnError
+        |> IO.andThen
+            (\usename ->
+                IO.printLn ("Hello, " ++ username)
+            )
 -}
 failOnError : IO String Exit -> IO String String
 failOnError io =
@@ -71,6 +79,9 @@ failOnError io =
 
 
 {-| Spawn a child process
+
+    spawn cmd args
+
 -}
 spawn : String -> List String -> IO String Pid
 spawn cmd args =
