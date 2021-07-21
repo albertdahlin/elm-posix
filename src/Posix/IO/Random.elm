@@ -17,7 +17,7 @@ import Random exposing (Generator)
 
     roll : IO x Int
     roll =
-        IO.seed
+        seed
             |> IO.map
                 (Random.step (Random.int 1 6)
                     |> Tuple.first
