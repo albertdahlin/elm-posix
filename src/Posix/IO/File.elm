@@ -5,7 +5,10 @@ module Posix.IO.File exposing
     , Option, create, append, exclusive
     )
 
-{-| File IO can fail for many reasons. If there is an IO problem you basically have two
+{-| This module provides a simple API for reading and writing whole
+files at once.
+
+File IO can fail for many reasons. If there is an IO problem you basically have two
 options:
 
   - Recover by handing the error case in your code.
@@ -106,6 +109,3 @@ append =
 exclusive : Option
 exclusive =
     Append
-
-
-
