@@ -2,7 +2,10 @@ module Posix.IO.File exposing
     ( Filename
     , read, read_, ReadError(..)
     , write, write_, WriteError(..)
-    , Option, create, append, exclusive
+    , WriteMode(..), WhenExists(..)
+    , File, Readable, Writable
+    , openRead, openWrite, openReadWrite
+    , readStream, ReadResult(..), writeStream
     )
 
 {-| This module provides a simple API for reading and writing whole
@@ -30,13 +33,29 @@ with a typed error, the other fails with an error message.
 @docs write, write_, WriteError
 
 
-## Write Options
+## How should a file be written?
 
-@docs Option, create, append, exclusive
+@docs WriteMode, WhenExists
+
+
+# Stream API
+
+@docs File, Readable, Writable
+
+
+## Open a File
+
+@docs openRead, openWrite, openReadWrite
+
+
+## Read / Write to a Stream
+
+@docs readStream, ReadResult, writeStream
 
 -}
 
 import Posix.IO as IO exposing (IO)
+import Posix.IO.File.Permission as Permission exposing (Permission)
 
 
 {-| -}
@@ -47,8 +66,8 @@ type alias Filename =
 {-| -}
 type Option
     = Create
-    | Append
-    | Exclusive
+    | Appenda
+    | Exclusives
 
 
 {-| -}
@@ -79,33 +98,136 @@ type WriteError
 
 
 {-| -}
-write : List Option -> Filename -> String -> IO String ()
-write options name content =
+write : WriteMode -> Filename -> String -> IO String ()
+write writeMode name content =
     IO.return ()
 
 
 {-| -}
-write_ : List Option -> Filename -> String -> IO WriteError ()
-write_ name content options =
+write_ : WriteMode -> Filename -> String -> IO WriteError ()
+write_ writeMode content options =
     IO.return ()
 
 
-{-| Create file if it does not exist.
+
+-- STREAM API
+
+
+{-| An open file descriptor.
 -}
-create : Option
-create =
-    Create
+type File a
+    = File
 
 
-{-| Append data to file instead of overwriting it.
+{-| Phantom type indicating that a file is readable.
 -}
-append : Option
-append =
-    Append
+type Readable
+    = Readable
 
 
-{-| Exclusive write. Makes the write operation fail if the file already exists.
+{-| Phantom type indicating that a file is writable.
 -}
-exclusive : Option
-exclusive =
-    Append
+type Writable
+    = Writable
+
+
+{-| Open file for reading. Will fail if the file does not exist.
+-}
+openRead : Filename -> IO String (File Readable)
+openRead filename =
+    IO.fail ""
+
+
+{-| How to handle writes?
+
+  - `CreateIfNotExists` - Create the file if it does not exist.
+  - `FailIfExists` - Open as exclusive write.
+    If the file already exists the operation will fail.
+    This is useful when you want to avoid overwriting a file by accident.
+
+-}
+type WriteMode
+    = CreateIfNotExists WhenExists Permission.Mask
+    | FailIfExists Permission.Mask
+
+
+{-| What should we do when a file exists?
+
+  - `Truncate` - Truncates the file and places the file pointer at the beginning.
+    This will cause the file to be overwritten.
+  - `Append` - Place the file pointer at the end of the file.
+
+-}
+type WhenExists
+    = Truncate
+    | Append
+
+
+{-| Open a file for writing.
+
+    openLogFile : IO String (File Writable)
+    openLogFile =
+        openWrite
+            (CreateIfNotExists Append Permission.readWrite)
+            "my.log"
+
+-}
+openWrite : WriteMode -> Filename -> IO String (File Writable)
+openWrite writeMode filename =
+    case writeMode of
+        CreateIfNotExists whenExists mask ->
+            case whenExists of
+                Truncate ->
+                    --"w" mask
+                    IO.fail ""
+
+                Append ->
+                    --"a" mask
+                    IO.fail ""
+
+        FailIfExists mask ->
+            -- "wx"
+            IO.fail ""
+
+
+{-| Open a file for reading and writing.
+-}
+openReadWrite : WriteMode -> Filename -> IO String (File both)
+openReadWrite writeMode filename =
+    case writeMode of
+        CreateIfNotExists whenExists mask ->
+            case whenExists of
+                Truncate ->
+                    --"w+" mask
+                    IO.fail ""
+
+                Append ->
+                    --"a+" mask
+                    IO.fail ""
+
+        FailIfExists mask ->
+            -- "wx+"
+            IO.fail ""
+
+
+{-| The result of reading a file stream.
+-}
+type ReadResult
+    = EndOfFile
+    | ReadBytes Int String
+
+
+{-| Read _length_ bytes from a file stream. Will advance
+the file pointer on a successful read
+-}
+readStream : { length : Int } -> File Readable -> IO String ReadResult
+readStream len file =
+    IO.fail ""
+
+
+{-| Write string to a file stream. Will advance the file pointer
+on a successful write.
+-}
+writeStream : File Writable -> String -> IO String ()
+writeStream file content =
+    IO.fail ""

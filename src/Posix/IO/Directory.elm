@@ -3,7 +3,7 @@ module Posix.IO.Directory exposing
     , stat, Stat
     , Pattern, list
     , delete, copy, rename, symlink, mkdir
-    , Permission, setPermission, addPermission, removePermission
+    , setPermission, addPermission, removePermission
     )
 
 {-|
@@ -31,11 +31,12 @@ module Posix.IO.Directory exposing
 
 # Permissions
 
-@docs Permission, setPermission, addPermission, removePermission
+@docs setPermission, addPermission, removePermission
 
 -}
 
 import Posix.IO as IO exposing (IO)
+import Posix.IO.File.Permission as Permission exposing (Permission)
 import Time
 
 
@@ -158,20 +159,6 @@ mkdir target =
 
 
 -- PERMISSIONS
-
-
-{-| -}
-type alias Permission =
-    { ownerRead : Bool
-    , ownerWrite : Bool
-    , ownerExecute : Bool
-    , groupRead : Bool
-    , groupWrite : Bool
-    , groupExecute : Bool
-    , allRead : Bool
-    , allWrite : Bool
-    , allExecute : Bool
-    }
 
 
 {-| Set the permission
