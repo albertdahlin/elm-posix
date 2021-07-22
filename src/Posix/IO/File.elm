@@ -5,6 +5,7 @@ module Posix.IO.File exposing
     , WriteMode(..), WhenExists(..)
     , File, Readable, Writable
     , openRead, openWrite, openReadWrite
+    , OpenError(..), openErrorToString, openRead_, openWrite_, openReadWrite_
     , readStream, ReadResult(..), writeStream
     )
 
@@ -46,6 +47,11 @@ with a typed error, the other fails with an error message.
 ## Open a File
 
 @docs openRead, openWrite, openReadWrite
+
+
+## Open a File with typed error
+
+@docs OpenError, openErrorToString, openRead_, openWrite_, openReadWrite_
 
 
 ## Read / Write to a Stream
@@ -131,11 +137,31 @@ type Writable
     = Writable
 
 
+{-| -}
+type OpenError
+    = FileDoesNotExist
+    | MissingPermission
+    | FileAlreadyExists
+    | CouldNotCreateFile
+
+
+{-| -}
+openErrorToString : Filename -> OpenError -> String
+openErrorToString fn err =
+    ""
+
+
 {-| Open file for reading. Will fail if the file does not exist.
 -}
 openRead : Filename -> IO String (File Readable)
 openRead filename =
     IO.fail ""
+
+
+{-| -}
+openRead_ : Filename -> IO OpenError (File Readable)
+openRead_ filename =
+    IO.fail FileDoesNotExist
 
 
 {-| How to handle writes?
@@ -190,6 +216,12 @@ openWrite writeMode filename =
             IO.fail ""
 
 
+{-| -}
+openWrite_ : WriteMode -> Filename -> IO OpenError (File Writable)
+openWrite_ writeMode filename =
+    IO.fail FileDoesNotExist
+
+
 {-| Open a file for reading and writing.
 -}
 openReadWrite : WriteMode -> Filename -> IO String (File both)
@@ -210,6 +242,12 @@ openReadWrite writeMode filename =
             IO.fail ""
 
 
+{-| -}
+openReadWrite_ : WriteMode -> Filename -> IO OpenError (File both)
+openReadWrite_ writeMode filename =
+    IO.fail FileDoesNotExist
+
+
 {-| The result of reading a file stream.
 -}
 type ReadResult
@@ -217,17 +255,39 @@ type ReadResult
     | ReadBytes Int String
 
 
-{-| Read _length_ bytes from a file stream. Will advance
-the file pointer on a successful read
+{-| Read _length_ bytes from a file stream.
+
+If _position_ is `Nothing`, data will be read from the current
+file position, and the file position will be updated.
+
+If position is `Just pos`, data will be read from that offset
+and the file position will remain unchanged.
+
 -}
-readStream : { length : Int } -> File Readable -> IO String ReadResult
-readStream len file =
+readStream :
+    { length : Int
+    , position : Maybe Int
+    }
+    -> File Readable
+    -> IO String ReadResult
+readStream opts file =
     IO.fail ""
 
 
-{-| Write string to a file stream. Will advance the file pointer
-on a successful write.
+{-| Write string to a file stream. Returns the number
+of bytes written.
+
+If _position_ is `Nothing`, data will be written to the current
+file position, and the file position will be advanced.
+
+If position is `Just pos`, data will be written at that offset
+and the file position will remain unchanged.
+
 -}
-writeStream : File Writable -> String -> IO String ()
-writeStream file content =
+writeStream :
+    { position : Maybe Int }
+    -> File Writable
+    -> String
+    -> IO String Int
+writeStream opts file content =
     IO.fail ""
