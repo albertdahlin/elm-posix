@@ -4,6 +4,7 @@ module Posix.IO.File exposing
     , write, write_, WriteError(..)
     , WriteMode(..), WhenExists(..)
     , File, Readable, Writable
+    , stdIn, stdOut, stdErr
     , openRead, openWrite, openReadWrite
     , OpenError(..), openErrorToString, openRead_, openWrite_, openReadWrite_
     , readStream, ReadResult(..), writeStream
@@ -42,6 +43,11 @@ with a typed error, the other fails with an error message.
 # Stream API
 
 @docs File, Readable, Writable
+
+
+## Standard I/O streams
+
+@docs stdIn, stdOut, stdErr
 
 
 ## Open a File
@@ -149,6 +155,27 @@ type OpenError
 openErrorToString : Filename -> OpenError -> String
 openErrorToString fn err =
     ""
+
+
+{-| Standard input stream.
+-}
+stdIn : File Readable
+stdIn =
+    File
+
+
+{-| Standard output stream.
+-}
+stdOut : File Writable
+stdOut =
+    File
+
+
+{-| Standard error stream.
+-}
+stdErr : File Writable
+stdErr =
+    File
 
 
 {-| Open file for reading. Will fail if the file does not exist.
