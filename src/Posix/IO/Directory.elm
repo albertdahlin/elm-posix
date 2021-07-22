@@ -3,7 +3,7 @@ module Posix.IO.Directory exposing
     , stat, Stat
     , Pattern, list
     , delete, copy, rename, symlink, mkdir
-    , Permission, Mask, setPermission, addPermission, removePermission
+    , Permission, setPermission, addPermission, removePermission
     )
 
 {-|
@@ -31,7 +31,7 @@ module Posix.IO.Directory exposing
 
 # Permissions
 
-@docs Permission, Mask, setPermission, addPermission, removePermission
+@docs Permission, setPermission, addPermission, removePermission
 
 -}
 
@@ -162,21 +162,20 @@ mkdir target =
 
 {-| -}
 type alias Permission =
-    { owner : Mask
-    , group : Mask
-    , all : Mask
+    { ownerRead : Bool
+    , ownerWrite : Bool
+    , ownerExecute : Bool
+    , groupRead : Bool
+    , groupWrite : Bool
+    , groupExecute : Bool
+    , allRead : Bool
+    , allWrite : Bool
+    , allExecute : Bool
     }
 
 
-{-| -}
-type alias Mask =
-    { read : Bool
-    , write : Bool
-    , execute : Bool
-    }
-
-
-{-| -}
+{-| Set the permission
+-}
 setPermission : Permission -> Pattern -> IO String ()
 setPermission perm pat =
     IO.return ()
