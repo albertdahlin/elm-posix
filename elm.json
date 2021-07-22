@@ -7,6 +7,7 @@
     "exposed-modules": [
         "Posix.IO",
         "Posix.IO.File",
+        "Posix.IO.File.Permission",
         "Posix.IO.Directory",
         "Posix.IO.Process",
         "Posix.IO.Random"
