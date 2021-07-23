@@ -12,23 +12,23 @@ const createIoSource = `
 function createIo(rl, crypto) {
     return {
         fwrite: function(fd, content) {
-            this.send(fs.writeSync(fd, content));
+            fs.writeSync(fd, content);
         },
         fread: function(fd) {
-            this.send(fs.readFileSync(fd).toString());
+            return fs.readFileSync(fd).toString();
         },
         fopen: function(filename, flags) {
             try {
-                this.send(fs.openSync(filename, flags));
+                return fs.openSync(filename, flags);
             } catch (e) {
-                this.send(e.toString());
+                return e.toString();
             }
         },
         fstat: function(filename) {
             try {
-                this.send(fs.statSync(filename));
+                return fs.statSync(filename);
             } catch (e) {
-                this.send(e.toString());
+                return e.toString();
             }
         },
         readdir: function(dirname) {
@@ -44,14 +44,13 @@ function createIo(rl, crypto) {
                         isBlockDevice: dirent.isBlockDevice(),
                         isCharacterDevice: dirent.isCharacterDevice(),
                     }));
-                this.send(r);
+                return r;
             } catch (e) {
-                this.send(e.toString());
+                return e.toString();
             }
         },
         randomSeed: function() {
-            const seed = crypto.randomBytes(4).readInt32LE();
-            this.send(seed);
+            return crypto.randomBytes(4).readInt32LE();
         },
         panic: function(msg) {
             console.error(msg);
@@ -107,8 +106,13 @@ function start(elmApp, flags) {
             printBugReport(`IO Function "${msg.fn}" not implemented.`);
             process.exit(255);
         }
+        var result = fn.apply(null, msg.args);
 
-        fn.apply(app.ports.recv, msg.args);
+        if (result instanceof Promise) {
+            result.finally(app.ports.recv.send);
+        } else {
+            app.ports.recv.send(result);
+        }
     });
 }
 
@@ -308,7 +312,13 @@ const app = elmApp.init({ flags: flags });
 app.ports.send.subscribe(function(msg) {
     const fn = io[msg.fn];
 
-    fn.apply(app.ports.recv, msg.args);
+    var result = fn.apply(null, msg.args);
+
+    if (result instanceof Promise) {
+        result.finally(app.ports.recv.send);
+    } else {
+        app.ports.recv.send(result);
+    }
 });
 
 ${createIoSource}
