@@ -11,18 +11,21 @@ import Time
 -}
 program : a -> IO String ()
 program _ =
-    IO.printLn "Press Ctrl+C to exit."
+    IO.printLn "Will print the current time 3 times and then exit."
         |> IO.and (IO.performTask Time.here)
-        |> IO.andThen (\zone -> printTime zone ())
+        |> IO.andThen (\zone -> printTime zone 3)
 
 
-printTime : Time.Zone -> () -> IO String ()
-printTime zone _ =
-    IO.performTask Time.now
-        |> IO.map (toHHMMSS zone)
-        |> IO.andThen IO.printLn
-        |> IO.and (IO.sleep 1000)
-        |> IO.andThen (printTime zone)
+printTime : Time.Zone -> Int -> IO String ()
+printTime zone count =
+    if count <= 0 then
+        IO.none
+    else
+        IO.performTask Time.now
+            |> IO.map (toHHMMSS zone)
+            |> IO.andThen IO.printLn
+            |> IO.and (IO.sleep 1000)
+            |> IO.andThen (\_ -> printTime zone (count - 1))
 
 
 toHHMMSS : Time.Zone -> Time.Posix -> String
