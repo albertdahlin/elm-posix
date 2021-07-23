@@ -1,8 +1,8 @@
 module Clock exposing (..)
 
 {-| Prints the time on the terminal every second.
-
 -}
+
 import Posix.IO as IO exposing (IO)
 import Time
 
@@ -18,14 +18,17 @@ program _ =
 
 printTime : Time.Zone -> Int -> IO String ()
 printTime zone count =
-    if count <= 0 then
-        IO.none
-    else
-        IO.performTask Time.now
-            |> IO.map (toHHMMSS zone)
-            |> IO.andThen IO.printLn
-            |> IO.and (IO.sleep 1000)
-            |> IO.andThen (\_ -> printTime zone (count - 1))
+    IO.performTask Time.now
+        |> IO.map (toHHMMSS zone)
+        |> IO.andThen IO.printLn
+        |> IO.and
+            (if count <= 1 then
+                IO.none
+
+             else
+                IO.sleep 1000
+                    |> IO.and (printTime zone (count - 1))
+            )
 
 
 toHHMMSS : Time.Zone -> Time.Posix -> String
