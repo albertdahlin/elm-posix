@@ -53,6 +53,11 @@ function createIo(rl, crypto) {
             const seed = crypto.randomBytes(4).readInt32LE();
             this.send(seed);
         },
+        panic: function(msg) {
+            console.error(msg);
+            rl.close();
+            process.exit(255);
+        },
         exit: function(status) {
             rl.close();
             process.exit(status);

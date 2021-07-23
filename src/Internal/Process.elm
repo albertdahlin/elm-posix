@@ -50,7 +50,7 @@ type Handler a
 
 type Model
     = WaitingForTask
-    | WaitingForValue (Decoder Proc)
+    | WaitingForValue ArgsToJs (Decoder Proc)
 
 
 type Msg
@@ -74,7 +74,7 @@ next : (ArgsToJs -> Cmd Msg) -> Proc -> ( Model, Cmd Msg )
 next callJs (Proc handler) =
     case handler of
         CallJs arg decoder ->
-            ( WaitingForValue decoder, callJs arg )
+            ( WaitingForValue arg decoder, callJs arg )
 
         PerformTask task ->
             ( WaitingForTask, Task.perform GotNext task )
@@ -83,19 +83,32 @@ next callJs (Proc handler) =
 update : (ArgsToJs -> Cmd Msg) -> Msg -> Model -> ( Model, Cmd Msg )
 update sendToJs msg model =
     case ( msg, model ) of
-        ( GotValue value, WaitingForValue decoder ) ->
+        ( GotValue value, WaitingForValue arg decoder ) ->
             case Decode.decodeValue decoder value of
                 Ok proc ->
                     next sendToJs proc
 
                 Err err ->
-                    ( model, Cmd.none )
+                    let
+                        errorMsg =
+                            "The value returned from calling \""
+                                ++ arg.fn
+                                ++ "\" could not be decoded.\n"
+                                ++ Decode.errorToString err
+                    in
+                    ( model
+                    , panic errorMsg
+                        |> sendToJs
+                    )
 
         ( GotNext proc, WaitingForTask ) ->
             next sendToJs proc
 
         _ ->
-            ( model, Cmd.none )
+            ( model
+            , panic "Unexpected msg and model combination."
+                |> sendToJs
+            )
 
 
 init : PortOut Msg -> (Env -> Proc) -> Flags -> ( Model, Cmd Msg )
@@ -129,3 +142,12 @@ makeProgram makeIo portIn portOut =
         , update = update portOut
         , subscriptions = subscriptions portIn
         }
+
+
+panic : String -> ArgsToJs
+panic msg =
+    { fn = "panic"
+    , args =
+        [ Encode.string msg
+        ]
+    }
