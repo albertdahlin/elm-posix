@@ -51,7 +51,9 @@ function start(elmApp, flags) {
         var result = fn.apply(null, msg.args);
 
         if (result instanceof Promise) {
-            result.finally(app.ports.recv.send);
+            result
+                .then(app.ports.recv.send)
+                .catch(app.ports.recv.send);
         } else {
             app.ports.recv.send(result);
         }
@@ -263,7 +265,9 @@ app.ports.send.subscribe(function(msg) {
     var result = fn.apply(null, msg.args);
 
     if (result instanceof Promise) {
-        result.finally(app.ports.recv.send);
+        result
+            .then(app.ports.recv.send)
+            .catch(app.ports.recv.send);
     } else {
         app.ports.recv.send(result);
     }

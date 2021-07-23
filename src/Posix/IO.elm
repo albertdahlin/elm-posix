@@ -158,7 +158,6 @@ For example you can fetch data using the [elm/http](https://package.elm-lang.org
             }
             |> attemptTask
 
-
     stringBody : Http.Response String -> Result String String
     stringBody response =
         case response of
@@ -197,7 +196,14 @@ js/my-functions.js
 ```javascript
 module.exports = {
     addOne: function(num) {
-        this.send(num + 1);
+        // sync example
+        return num + 1;
+    },
+    sleep: function(delay) {
+        // async example
+        return new Promise(resolve => {
+            setTimeout(resolve, delay);
+        });
     },
 }
 ```
@@ -211,6 +217,14 @@ src/MyModule.elm
             [ Encode.int n
             ]
             Decode.int
+
+    sleep : Float -> IO x ()
+    sleep delay =
+        IO.callJs
+            "sleep"
+            [ Encode.float delay
+            ]
+            (Decode.succeed ()) -- Ignore return value
 
 Run like this:
 
