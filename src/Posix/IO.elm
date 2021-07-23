@@ -348,25 +348,12 @@ makeProgram makeIO =
                         Err error ->
                             Proc.Proc
                                 (Proc.CallJs
-                                    { fn = "fwrite"
-                                    , args =
-                                        [ Encode.int 2
-                                        , "\nERROR: "
-                                            ++ error
-                                            ++ "\n"
-                                            |> Encode.string
-                                        ]
-                                    }
-                                    (Decode.succeed
-                                        (Proc.Proc
-                                            (Proc.CallJs
-                                                { fn = "exit"
-                                                , args = [ Encode.int 255 ]
-                                                }
-                                                (Decode.fail "")
-                                            )
-                                        )
+                                    ("\nERROR: "
+                                        ++ error
+                                        ++ "\n"
+                                        |> Proc.panic
                                     )
+                                    (Decode.fail "")
                                 )
                 )
         )

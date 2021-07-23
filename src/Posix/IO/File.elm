@@ -11,7 +11,7 @@ module Posix.IO.File exposing
     )
 
 {-| This module provides a simple API for reading and writing whole
-files at once.
+files at once as well as a streaming API.
 
 File IO can fail for many reasons. If there is an IO problem you basically have two
 options:
@@ -73,13 +73,6 @@ import Posix.IO.File.Permission as Permission exposing (Permission)
 {-| -}
 type alias Filename =
     String
-
-
-{-| -}
-type Option
-    = Create
-    | Appenda
-    | Exclusives
 
 
 {-| -}
