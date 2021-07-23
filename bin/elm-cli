@@ -7,64 +7,7 @@ const os = require('os');
 const tmpDir = os.tmpdir();
 const crypto = require('crypto');
 const XMLHttpRequest = require('../js/xmlhttprequest.js');
-
-const createIoSource = `
-function createIo(rl, crypto) {
-    return {
-        fwrite: function(fd, content) {
-            fs.writeSync(fd, content);
-        },
-        fread: function(fd) {
-            return fs.readFileSync(fd).toString();
-        },
-        fopen: function(filename, flags) {
-            try {
-                return fs.openSync(filename, flags);
-            } catch (e) {
-                return e.toString();
-            }
-        },
-        fstat: function(filename) {
-            try {
-                return fs.statSync(filename);
-            } catch (e) {
-                return e.toString();
-            }
-        },
-        readdir: function(dirname) {
-            try {
-                var r = fs.readdirSync(dirname, { withFileTypes: true })
-                    .map(dirent => ({
-                        name: dirent.name,
-                        isDir: dirent.isDirectory(),
-                        isFile: dirent.isFile(),
-                        isSocket: dirent.isSocket(),
-                        isFifo: dirent.isFIFO(),
-                        isSymlink: dirent.isSymbolicLink(),
-                        isBlockDevice: dirent.isBlockDevice(),
-                        isCharacterDevice: dirent.isCharacterDevice(),
-                    }));
-                return r;
-            } catch (e) {
-                return e.toString();
-            }
-        },
-        randomSeed: function() {
-            return crypto.randomBytes(4).readInt32LE();
-        },
-        panic: function(msg) {
-            console.error(msg);
-            rl.close();
-            process.exit(255);
-        },
-        exit: function(status) {
-            rl.close();
-            process.exit(status);
-        }
-    }
-}
-`;
-eval(createIoSource);
+const stdIo = require('../js/io.js');
 
 const args = parseArgs(process.argv.slice(2));
 
@@ -96,11 +39,10 @@ function start(elmApp, flags) {
       input: process.stdin,
       output: process.stdout
     });
-    const io = createIo(rl, crypto);
     const app = elmApp.init({ flags: flags });
 
     app.ports.send.subscribe(function(msg) {
-        const fn = io[msg.fn];
+        const fn = stdIo[msg.fn];
 
         if (!fn) {
             printBugReport(`IO Function "${msg.fn}" not implemented.`);
@@ -272,6 +214,7 @@ main =
 
 function wrapCliProgram(jsFile) {
     const elm = fs.readFileSync(jsFile).toString();
+    const io = fs.readFileSync('../js/io.js').toString();
 
     return `#!/usr/bin/env node
 
@@ -282,6 +225,12 @@ const os = require('os');
 const tmpDir = os.tmpdir();
 const crypto = require('crypto');
 
+
+const stdIo = function() {
+    ${io}
+
+    return module.exports;
+}
 
 ${elm}
 
@@ -301,7 +250,6 @@ const rl = readline.createInterface({
 });
 
 
-const io = createIo(rl, crypto);
 const flags = {
     argv: process.argv.slice(1),
     pid: process.pid,
@@ -310,7 +258,7 @@ const flags = {
 const app = elmApp.init({ flags: flags });
 
 app.ports.send.subscribe(function(msg) {
-    const fn = io[msg.fn];
+    const fn = stdIo[msg.fn];
 
     var result = fn.apply(null, msg.args);
 
@@ -321,6 +269,5 @@ app.ports.send.subscribe(function(msg) {
     }
 });
 
-${createIoSource}
 `;
 }
