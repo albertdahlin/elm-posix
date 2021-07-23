@@ -1,12 +1,12 @@
 module Posix.IO.File exposing
     ( Filename
-    , read, read_, ReadError(..)
-    , write, write_, WriteError(..)
+    , read, write
     , WriteMode(..), WhenExists(..)
+    , read_, write_, Error(..), OpenError(..), ReadError(..), WriteError(..), errorToString
     , File, Readable, Writable
     , stdIn, stdOut, stdErr
     , openRead, openWrite, openReadWrite
-    , OpenError(..), openErrorToString, openRead_, openWrite_, openReadWrite_
+    , openRead_, openWrite_, openReadWrite_
     , readStream, ReadResult(..), writeStream
     )
 
@@ -25,19 +25,21 @@ with a typed error, the other fails with an error message.
 @docs Filename
 
 
-# Read File
+# Read / Write File
 
-@docs read, read_, ReadError
+Read or write a whole file at once.
 
-
-# Write File
-
-@docs write, write_, WriteError
+@docs read, write
 
 
 ## How should a file be written?
 
 @docs WriteMode, WhenExists
+
+
+## Read / Write with typed Error
+
+@docs read_, write_, Error, OpenError, ReadError, WriteError, errorToString
 
 
 # Stream API
@@ -57,7 +59,7 @@ with a typed error, the other fails with an error message.
 
 ## Open a File with typed error
 
-@docs OpenError, openErrorToString, openRead_, openWrite_, openReadWrite_
+@docs openRead_, openWrite_, openReadWrite_
 
 
 ## Read / Write to a Stream
@@ -66,6 +68,9 @@ with a typed error, the other fails with an error message.
 
 -}
 
+import Internal.Js
+import Json.Decode as Decode exposing (Decoder)
+import Json.Encode as Encode
 import Posix.IO as IO exposing (IO)
 import Posix.IO.File.Permission as Permission exposing (Permission)
 
@@ -76,30 +81,110 @@ type alias Filename =
 
 
 {-| -}
+type Error
+    = OpenError OpenError
+    | ReadError ReadError
+    | WriteError WriteError
+    | Other String
+
+
+{-| -}
+type OpenError
+    = FileDoesNotExist String
+    | MissingPermission String
+    | IsDirectory String
+    | ToManyFilesOpen String
+
+
+{-| -}
 type ReadError
-    = ReadFileNotFound
-    | ReadNoPermission
-    | ReadNotReadable
+    = CouldNotRead String
+
+
+{-| -}
+type WriteError
+    = CouldNotCreateFile String
+    | FileAlreadyExists String
+
+
+{-| -}
+errorToString : Error -> String
+errorToString err =
+    case err of
+        Other msg ->
+            msg
+
+        OpenError (FileDoesNotExist msg) ->
+            msg
+
+        OpenError (MissingPermission msg) ->
+            msg
+
+        OpenError (IsDirectory msg) ->
+            msg
+
+        OpenError (ToManyFilesOpen msg) ->
+            msg
+
+        ReadError (CouldNotRead msg) ->
+            msg
+
+        WriteError (FileAlreadyExists msg) ->
+            msg
+
+        WriteError (CouldNotCreateFile msg) ->
+            msg
 
 
 {-| -}
 read : Filename -> IO String String
 read name =
-    IO.fail ""
+    callReadFile name
+        |> IO.mapError .msg
 
 
 {-| -}
-read_ : Filename -> IO ReadError String
+read_ : Filename -> IO Error String
 read_ name =
-    IO.return ""
+    callReadFile name
+        |> IO.mapError
+            (handleOpenErrors
+                (\error ->
+                    case error.code of
+                        _ ->
+                            ReadError (CouldNotRead error.msg)
+                )
+            )
 
 
-{-| -}
-type WriteError
-    = WriteFileNotFound
-    | WriteNoPermission
-    | WriteNotExclusive
-    | WriteNotWritable
+callReadFile : String -> IO Internal.Js.Error String
+callReadFile name =
+    Internal.Js.decodeJsResult Decode.string
+        |> IO.callJs "readFile" [ Encode.string name ]
+        |> IO.andThen IO.fromResult
+
+
+handleOpenErrors : (Internal.Js.Error -> Error) -> Internal.Js.Error -> Error
+handleOpenErrors handleRest error =
+    case error.code of
+        "ENOENT" ->
+            FileDoesNotExist error.msg
+                |> OpenError
+
+        "EACCES" ->
+            MissingPermission error.msg
+                |> OpenError
+
+        "EISDIR" ->
+            IsDirectory error.msg
+                |> OpenError
+
+        "EMFILE" ->
+            ToManyFilesOpen error.msg
+                |> OpenError
+
+        _ ->
+            handleRest error
 
 
 {-| -}
@@ -109,7 +194,7 @@ write writeMode name content =
 
 
 {-| -}
-write_ : WriteMode -> Filename -> String -> IO WriteError ()
+write_ : WriteMode -> Filename -> String -> IO Error ()
 write_ writeMode content options =
     IO.return ()
 
@@ -134,20 +219,6 @@ type Readable
 -}
 type Writable
     = Writable
-
-
-{-| -}
-type OpenError
-    = FileDoesNotExist
-    | MissingPermission
-    | FileAlreadyExists
-    | CouldNotCreateFile
-
-
-{-| -}
-openErrorToString : Filename -> OpenError -> String
-openErrorToString fn err =
-    ""
 
 
 {-| Standard input stream.
@@ -181,7 +252,7 @@ openRead filename =
 {-| -}
 openRead_ : Filename -> IO OpenError (File Readable)
 openRead_ filename =
-    IO.fail FileDoesNotExist
+    IO.fail (FileDoesNotExist "")
 
 
 {-| How to handle writes?
@@ -239,7 +310,7 @@ openWrite writeMode filename =
 {-| -}
 openWrite_ : WriteMode -> Filename -> IO OpenError (File Writable)
 openWrite_ writeMode filename =
-    IO.fail FileDoesNotExist
+    IO.fail (FileDoesNotExist "")
 
 
 {-| Open a file for reading and writing.
@@ -265,7 +336,7 @@ openReadWrite writeMode filename =
 {-| -}
 openReadWrite_ : WriteMode -> Filename -> IO OpenError (File both)
 openReadWrite_ writeMode filename =
-    IO.fail FileDoesNotExist
+    IO.fail (FileDoesNotExist "")
 
 
 {-| The result of reading a file stream.

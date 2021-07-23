@@ -1,7 +1,35 @@
 const fs = require('fs');
 const crypto = require('crypto');
 
+function Ok(v) {
+    return {
+        result: 'Ok',
+        data: v
+    }
+}
+
+function Err(e) {
+    return {
+        result: 'Err',
+        data: e
+    }
+}
+function encodeError(err) {
+    return Err({
+        code: err.code || 'NONE',
+        msg: err.message,
+    });
+}
+
 module.exports = {
+    readFile: function(name) {
+        try {
+            const content = fs.readFileSync(name).toString();
+            return Ok(content);
+        } catch (err) {
+            return encodeError(err);
+        }
+    },
     fwrite: function(fd, content) {
         fs.writeSync(fd, content);
     },
