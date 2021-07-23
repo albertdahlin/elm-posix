@@ -1,5 +1,5 @@
 module Posix.IO exposing
-    ( IO, return, fail, none
+    ( IO, return, fail, none, fromResult
     , print, printLn, sleep, exit
     , map, andMap, andThen, and, combine
     , mapError, recover
@@ -19,7 +19,7 @@ value, the second value is the "return" value of an IO-operation.
 A program must have the type `IO String ()`. The error parameter must have type `String`.
 This allows the runtime to print error message to std err in case of a problem.
 
-@docs IO, return, fail, none
+@docs IO, return, fail, none, fromResult
 
 
 # Basic IO
@@ -102,6 +102,18 @@ fail err =
 none : IO x ()
 none =
     return ()
+
+
+{-| -}
+fromResult : Result err ok -> IO err ok
+fromResult result =
+    case result of
+        Ok ok ->
+            return ok
+
+        Err err ->
+            fail err
+
 
 
 {-| -}
