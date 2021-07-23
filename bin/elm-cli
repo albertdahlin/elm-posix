@@ -71,7 +71,7 @@ switch (args.cmd) {
         fs.writeFileSync(args.dst, sourceCode, { mode: 0o755 });
 
         fs.unlinkSync(jsFile);
-        process.exit(255);
+        process.exit(0);
         break;
 
     case 'run':
