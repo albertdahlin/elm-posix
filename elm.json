@@ -3,7 +3,7 @@
     "name": "albertdahlin/elm-posix",
     "summary": "Write posix programs using IO monad",
     "license": "MIT",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "exposed-modules": [
         "Posix.IO",
         "Posix.IO.Process",
