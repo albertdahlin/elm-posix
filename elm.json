@@ -3,13 +3,13 @@
     "name": "albertdahlin/elm-posix",
     "summary": "Write posix programs using IO monad",
     "license": "MIT",
-    "version": "1.0.0",
-    "elm-version": "0.19.0 <= v < 0.20.0",
+    "version": "1.0.1",
     "exposed-modules": [
         "Posix.IO",
         "Posix.IO.Process",
         "Posix.IO.File"
     ],
+    "elm-version": "0.19.0 <= v < 0.20.0",
     "dependencies": {
         "elm/core": "1.0.1 <= v < 2.0.0",
         "elm/json": "1.1.0 <= v < 2.0.0"
