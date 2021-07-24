@@ -183,7 +183,7 @@ OPTION:
 function printBugReport(msg) {
     console.error(`
 You found a bug!
-Please report at https://github.com:albertdahlin/elm-posix/issues
+Please report at https://github.com/albertdahlin/elm-posix/issues
 
 Copy the information below into the issue:
 
