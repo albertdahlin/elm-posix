@@ -3,7 +3,8 @@ module Posix.IO.Process exposing
     , Pid, spawn, wait, kill, send, receive, Message(..)
     )
 
-{-|
+{-| This module provides an API for executing shell
+commands and spawning child processes.
 
 
 # Execute shell commands

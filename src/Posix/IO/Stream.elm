@@ -1,11 +1,12 @@
 module Posix.IO.Stream exposing
     ( Stream
-    , stdIn, stdOut, string, bytes, gunzip, gzip, line
+    , stdIn, stdOut, string, bytes, line, gunzip, gzip
     , read, write
     , pipeTo, run
     )
 
-{-|
+{-| This module provides an API for working with
+strams and pipes.
 
 @docs Stream
 
@@ -66,14 +67,20 @@ gzip =
     Internal.Stream
 
 
-{-| Convert to utf8 string
+{-| Convert bytes to utf8 string
+
+    stdInAsString : Stream Never String
+    stdInAsString =
+        stdIn
+            |> pipeTo string
+
 -}
 string : Stream Bytes String
 string =
     Internal.Stream
 
 
-{-| Convert to bytes.
+{-| Convert string to bytes.
 -}
 bytes : Stream String Bytes
 bytes =
@@ -97,8 +104,8 @@ type ReadError
     = TODO_ReadError
 
 
-{-| Read *size* bytes/length/lines from a stream.
-
+{-| Read _size_ bytes/length/lines from a stream.
+Depending on the type of stream, _size_ represent different things:
 
     read10Bytes : IO String Bytes
     read10Bytes =

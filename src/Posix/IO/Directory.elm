@@ -6,7 +6,8 @@ module Posix.IO.Directory exposing
     , setPermission, addPermission, removePermission
     )
 
-{-|
+{-| This module provides an API for working with the
+file system.
 
 
 # Directory Entry
@@ -26,7 +27,7 @@ module Posix.IO.Directory exposing
 
 # Directory Operations
 
-@docs delete, copy, rename, symlink, mkdir
+@docs copy, rename, delete, symlink, mkdir
 
 
 # Permissions
