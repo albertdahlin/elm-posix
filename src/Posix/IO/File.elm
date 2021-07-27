@@ -233,7 +233,7 @@ type WhenExists
 
 {-| Open a file for writing.
 
-    openLogFile : IO String (File Writable)
+    openLogFile : IO String (Stream Binary Never)
     openLogFile =
         openWriteStream
             (CreateIfNotExists Append Permission.readWrite)
