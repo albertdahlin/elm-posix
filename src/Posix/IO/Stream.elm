@@ -1,8 +1,9 @@
 module Posix.IO.Stream exposing
     ( Stream
     , stdIn, stdOut, string, bytes, line, gunzip, gzip
-    , read, write
     , pipeTo, run
+    , read, write
+    , read_, ReadError(..), write_, WriteError(..)
     )
 
 {-| This module provides an API for working with
@@ -16,14 +17,19 @@ strams and pipes.
 @docs stdIn, stdOut, string, bytes, line, gunzip, gzip
 
 
+# Stream pipelines
+
+@docs pipeTo, run
+
+
 # Read / write streams
 
 @docs read, write
 
 
-# Stream pipelines
+# Read / write streams
 
-@docs pipeTo, run
+@docs read_, ReadError, write_, WriteError
 
 -}
 
@@ -80,7 +86,7 @@ string =
     Internal.Stream
 
 
-{-| Convert string to bytes.
+{-| Convert an utf8 string to bytes.
 -}
 bytes : Stream String Bytes
 bytes =
@@ -131,11 +137,31 @@ read size stream =
     IO.fail ""
 
 
-{-| Write a string to a stream.
+{-| Write data to a stream.
 -}
 write : input -> Stream input x -> IO String ()
 write str stream =
     IO.fail ""
+
+
+{-| Same as `read` but with a typed error.
+-}
+read_ : Int -> Stream x output -> IO ReadError output
+read_ size stream =
+    IO.fail TODO_ReadError
+
+
+{-| Stream write errors
+-}
+type WriteError
+    = TODO_WriteError
+
+
+{-| Same as `write` but with a typed error.
+-}
+write_ : input -> Stream input x -> IO WriteError ()
+write_ str stream =
+    IO.fail TODO_WriteError
 
 
 {-| Connect the output of one stream to the input of another.
@@ -144,6 +170,7 @@ write str stream =
     readLineByLine =
         stdIn
             |> pipeTo gunzip
+            |> pipeTo string
             |> pipeTo line
 
 -}
@@ -160,7 +187,7 @@ test =
             |> pipeTo line
 
 
-{-| Run a pipeline where the input and output is connected.
+{-| Run a pipeline where the input and output are connected.
 
     passthrough : IO String ()
     passthrough =
