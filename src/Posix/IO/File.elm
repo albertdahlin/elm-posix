@@ -83,7 +83,7 @@ type OpenError
     = FileDoesNotExist String
     | MissingPermission String
     | IsDirectory String
-    | ToManyFilesOpen String
+    | TooManyFilesOpen String
 
 
 {-| -}
@@ -113,7 +113,7 @@ errorToString err =
         OpenError (IsDirectory msg) ->
             msg
 
-        OpenError (ToManyFilesOpen msg) ->
+        OpenError (TooManyFilesOpen msg) ->
             msg
 
         ReadError (CouldNotRead msg) ->
@@ -170,7 +170,7 @@ handleOpenErrors handleRest error =
                 |> OpenError
 
         "EMFILE" ->
-            ToManyFilesOpen error.msg
+            TooManyFilesOpen error.msg
                 |> OpenError
 
         _ ->
