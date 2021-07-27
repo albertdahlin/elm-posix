@@ -55,14 +55,14 @@ stdOut =
 
 {-| Uncompress stream using gzip
 -}
-gunzip : Stream Bytes String
+gunzip : Stream Bytes Bytes
 gunzip =
     Internal.Stream
 
 
 {-| Compress stream using gzip
 -}
-gzip : Stream String Bytes
+gzip : Stream Bytes Bytes
 gzip =
     Internal.Stream
 
@@ -152,13 +152,12 @@ pipeTo r w =
     Internal.Stream
 
 
-test : IO String ()
+test : Stream Never String
 test =
-    stdIn
-        |> pipeTo string
-        |> pipeTo gzip
-        |> pipeTo stdOut
-        |> run
+        stdIn
+            |> pipeTo gunzip
+            |> pipeTo string
+            |> pipeTo line
 
 
 {-| Run a pipeline where the input and output is connected.
