@@ -1,6 +1,9 @@
 const fs = require('fs');
 const crypto = require('crypto');
 
+let streams = {}
+let lastKey = 1;
+
 function Ok(v) {
     return {
         result: 'Ok',
@@ -77,5 +80,156 @@ module.exports = {
     },
     exit: function(status) {
         process.exit(status);
+    },
+    // Streams
+    createStream: function(stream, args) {
+        switch (stream) {
+            case 'openRead':
+                var key = 'file-' + ++lastKey;
+
+                var file = fs.openSync(args);
+                streams[key] = readGenerator(file);
+
+                return { id: key };
+
+            case 'numbersFrom':
+                var key = 'gen-' + ++lastKey;
+
+                streams[key] = numbersFrom(args);
+
+                return { id: key };
+        }
+
+        return `Stream ${stream} not implemented`;
+    },
+    readStream: function(pipes) {
+        const key = piplineKey(pipes);
+
+        let iterator = streams[key];
+
+        if (!iterator) {
+            iterator = createPipeline(pipes);
+            streams[key] = iterator;
+        }
+
+        return iterator.next().value;
+    },
+}
+
+function piplineKey(pipes) {
+    return pipes.map(p => p.id).join(':');
+}
+
+function createPipeline(pipes) {
+    let iterator = null;
+    let pipe = null;
+
+    while (pipe = pipes.shift()) {
+        switch (pipe.id) {
+            case 'toString':
+                iterator = utf8Decode(iterator);
+                break;
+
+            default:
+                iterator = streams[pipe.id];
+        }
     }
+
+    return iterator;
+}
+
+function * utf8Decode(it) {
+    let buffer = it.next().value;
+    let partialMbBuffer = null;
+
+    while (buffer) {
+        const mbOffsetFromEnd = utf8_mbOffsetFromEnd(buffer);
+
+        if (!mbOffsetFromEnd) {
+            // No broken mb characters at the end of the buffer.
+            yield buffer.toString('utf8');
+        } else {
+            // We have a partial multibyte char at the end.of the buffer.
+            // Let's put it away and prepend it to the next buffer;
+            let slice = buffer.slice(buffer.length - mbOffsetFromEnd);
+            partialMbBuffer = Buffer.from(slice);
+            // yield everythin but the partial multibyte char.
+            yield buffer.toString('utf8', 0, buffer.length - mbOffsetFromEnd);
+        }
+
+        buffer = it.next().value;
+
+        if (buffer && partialMbBuffer) {
+            // prepend the partial multibyte char to the beginning.
+            buffer = Buffer.concat([partialMbBuffer, buffer]);
+            partialMbBuffer = null;
+        }
+    }
+}
+
+function utf8_mbOffsetFromEnd(buf) {
+    const lastIdx = buf.length - 1;
+    let idx = 1;
+    let mbWidth = utf8_getMbWidth(buf[lastIdx]);
+
+    if (!mbWidth) {
+        // last byte is not multibyte.
+        return 0;
+    }
+
+    while (true) {
+        if (mbWidth == 1) {
+            // we got a tail byte of a multibyte char
+            // continue to search for the start byte.
+            mbWidth = utf8_getMbWidth(buf[lastIdx - idx]);
+            idx++;
+        } else {
+            // we got the start byte of a multibyte char.
+            if (idx == mbWidth) {
+                return 0;
+            }
+            return idx;
+        }
+    }
+}
+
+function utf8_getMbWidth(b) {
+    // 1xxx xxxx
+    if (b & 0x80) {
+        if ((b & 0xF0) === 0xF0) { // 1111 xxxx
+            // start of 4 byte char
+            return 4;
+        } else if ((b & 0xE0) === 0xE0) { // 111x xxxx
+            // start of 3 byte char
+            return 3;
+        } else if ((b & 0xC0) === 0xC0) { // 11xx xxxx
+            // start of 2 byte char
+            return 2;
+        }
+        // Tail of mb char.
+        return 1;
+    }
+
+    // Not a multi byte char.
+    return 0;
+}
+
+function * readGenerator(fd) {
+    const buffer = Buffer.alloc(8);
+    const offset = 0;
+    const length = buffer.length - offset;
+    let bytesRead = fs.readSync(fd, buffer, offset, length, null);
+
+    while (bytesRead) {
+        if (bytesRead < buffer.length) {
+            yield buffer.slice(0, bytesRead);
+        } else {
+            yield buffer;
+        }
+        bytesRead = fs.readSync(fd, buffer, offset, length, null);
+    }
+}
+
+function * numbersFrom(n) {
+    while (true) yield n++;
 }
