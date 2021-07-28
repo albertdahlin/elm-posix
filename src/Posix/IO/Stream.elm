@@ -1,6 +1,6 @@
 module Posix.IO.Stream exposing
     ( Stream
-    , stdIn, stdOut, string, bytes, line, gunzip, gzip
+    , stdIn, stdOut, utf8Decode, utf8Encode, line, gunzip, gzip
     , pipeTo, run
     , read, write
     , read_, ReadError(..), write_, WriteError(..)
@@ -14,7 +14,7 @@ strams and pipes.
 
 # Stream pipes
 
-@docs stdIn, stdOut, string, bytes, line, gunzip, gzip
+@docs stdIn, stdOut, utf8Decode, utf8Encode, line, gunzip, gzip
 
 
 # Stream pipelines
@@ -78,24 +78,24 @@ gzip =
     stdInAsString : Stream Never String
     stdInAsString =
         stdIn
-            |> pipeTo string
+            |> pipeTo utf8Decode
 
 -}
-string : Stream Bytes String
-string =
+utf8Decode : Stream Bytes String
+utf8Decode =
     Internal.Stream
 
 
 {-| Convert an utf8 string to bytes.
 -}
-bytes : Stream String Bytes
-bytes =
+utf8Encode : Stream String Bytes
+utf8Encode =
     Internal.Stream
 
 
 {-| Read stream line by line
 -}
-line : Stream String String
+line : Stream String (List String)
 line =
     Internal.Stream
 
@@ -121,13 +121,13 @@ Depending on the type of stream, _size_ represent different things:
     readStringOfLength10 : IO String String
     readStringOfLength10 =
         stdIn
-            |> pipeTo string
+            |> pipeTo utf8Decode
             |> read 10
 
     read10Lines : IO String String
     read10Lines =
         stdIn
-            |> pipeTo string
+            |> pipeTo utf8Decode
             |> pipeTo line
             |> read 10
 
@@ -166,11 +166,11 @@ write_ str stream =
 
 {-| Connect the output of one stream to the input of another.
 
-    readLineByLine : Stream Never String
+    readLineByLine : Stream Never (List String)
     readLineByLine =
         stdIn
             |> pipeTo gunzip
-            |> pipeTo string
+            |> pipeTo utf8Decode
             |> pipeTo line
 
 -}
@@ -179,11 +179,11 @@ pipeTo r w =
     Internal.Stream
 
 
-test : Stream Never String
+test : Stream Never (List String)
 test =
         stdIn
             |> pipeTo gunzip
-            |> pipeTo string
+            |> pipeTo utf8Decode
             |> pipeTo line
 
 
