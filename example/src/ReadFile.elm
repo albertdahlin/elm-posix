@@ -3,7 +3,7 @@ module ReadFile exposing (..)
 {-| -}
 
 import Posix.IO as IO exposing (IO)
-import Posix.IO.File as File exposing (File)
+import Posix.IO.File as File
 
 
 {-| This is the entry point, you can think of it as `main` in normal Elm applications.
