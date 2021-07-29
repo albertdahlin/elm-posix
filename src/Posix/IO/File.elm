@@ -3,7 +3,7 @@ module Posix.IO.File exposing
     , read, write
     , WriteMode(..), WhenExists(..)
     , read_, write_, Error(..), OpenError(..), ReadError(..), WriteError(..), errorToString
-    , openReadStream, openWriteStream
+    , openReadStream, defaultReadOptions, ReadOptions, openWriteStream
     , openReadStream_, openWriteStream_
     )
 
@@ -47,7 +47,7 @@ to learn more about Streams.
 
 ## Open a File
 
-@docs openReadStream, openWriteStream
+@docs openReadStream, defaultReadOptions, ReadOptions, openWriteStream
 
 
 ## Open a File with typed error
@@ -202,10 +202,24 @@ write_ writeMode content options =
 -- STREAM API
 
 
+{-| Read options
+-}
+type alias ReadOptions =
+    { bufferSize : Int
+    }
+
+{-| Default read options
+-}
+defaultReadOptions : ReadOptions
+defaultReadOptions =
+    { bufferSize = 4096
+    }
+
+
 {-| Open file for reading.
 -}
-openReadStream : Filename -> IO String (Stream Never Bytes)
-openReadStream filename =
+openReadStream : ReadOptions -> Filename -> IO String (Stream Never Bytes)
+openReadStream options filename =
     Internal.Js.decodeJsResultString
         (Internal.Stream.decoder
             (\_ -> Encode.null)
@@ -213,13 +227,14 @@ openReadStream filename =
         )
         |> IO.callJs "openReadStream"
             [ Encode.string filename
+            , Encode.int options.bufferSize
             ]
         |> IO.andThen IO.fromResult
 
 
 {-| -}
-openReadStream_ : Filename -> IO OpenError (Stream Never Bytes)
-openReadStream_ filename =
+openReadStream_ : ReadOptions -> Filename -> IO OpenError (Stream Never Bytes)
+openReadStream_ options filename =
     Internal.Js.decodeJsResult
         (Internal.Stream.decoder
             (\_ -> Encode.null)
@@ -227,6 +242,7 @@ openReadStream_ filename =
         )
         |> IO.callJs "openReadStream"
             [ Encode.string filename
+            , Encode.int options.bufferSize
             ]
 
         |> IO.andThen IO.fromResult

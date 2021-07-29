@@ -83,7 +83,7 @@ module.exports = {
         process.exit(status);
     },
     // Streams
-    openReadStream: function(filename) {
+    openReadStream: function(filename, bufferSize) {
         var key = 'file-' + ++lastKey;
 
         try {
@@ -92,7 +92,7 @@ module.exports = {
             return encodeError(err);
         }
 
-        streams[key] = readGenerator(file);
+        streams[key] = readGenerator(file, bufferSize);
 
         return Ok({ id: key });
     },
@@ -218,8 +218,8 @@ function utf8_getMbWidth(b) {
     return 0;
 }
 
-function * readGenerator(fd) {
-    const buffer = Buffer.alloc(8);
+function * readGenerator(fd, bufferSize) {
+    const buffer = Buffer.alloc(bufferSize);
     let offset = 0;
     let bytesRead = fs.readSync(fd, buffer, offset, buffer.length - offset, null);
 
