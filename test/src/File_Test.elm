@@ -16,6 +16,7 @@ program process =
     , testRead_
     , testFileNotFound
     , testNoPermission
+    , testIsDir
     ]
         |> Test.run
 
@@ -24,7 +25,7 @@ testRead : Test
 testRead =
     let
         test =
-            Test.name "testRead"
+            Test.name "read"
     in
     File.read "elm.json"
         |> IO.map
@@ -45,7 +46,7 @@ testRead_ : Test
 testRead_ =
     let
         test =
-            Test.name "testRead_"
+            Test.name "read_"
     in
     File.read_ "elm.json"
         |> IO.map
@@ -67,7 +68,7 @@ testFileNotFound : Test
 testFileNotFound =
     let
         test =
-            Test.name "testFileNotFound"
+            Test.name "Err FileDoesNotExist"
     in
     File.read_ "file that does not exist"
         |> IO.map
@@ -91,12 +92,12 @@ testNoPermission : Test
 testNoPermission =
     let
         test =
-            Test.name "testNoPermission"
+            Test.name "MissingPermisison error"
     in
     File.read_ "/root/"
         |> IO.map
             (\_ ->
-                test.fail "Should not be able to see /root"
+                test.fail "Missing permissions should result in an error"
             )
         |> IO.recover
             (\err ->
@@ -110,6 +111,29 @@ testNoPermission =
                             |> IO.return
             )
 
+
+testIsDir : Test
+testIsDir =
+    let
+        test =
+            Test.name "open dir should result in an error"
+    in
+    File.read_ "src"
+        |> IO.map
+            (\_ ->
+                test.fail "Should not be able to see /root"
+            )
+        |> IO.recover
+            (\err ->
+                case err of
+                    File.OpenError (File.IsDirectory msg) ->
+                        IO.return test.pass
+
+                    _ ->
+                        File.errorToString err
+                            |> test.fail
+                            |> IO.return
+            )
 
 decodeTypeField =
     Decode.field "type" Decode.string

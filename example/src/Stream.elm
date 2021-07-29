@@ -23,7 +23,7 @@ program process =
                 _ ->
                     "elm.json"
     in
-    File.openReadStream filename
+    File.openReadStream { bufferSize = 10 } filename
         |> IO.andThen
             (\src ->
                 src
