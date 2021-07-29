@@ -224,7 +224,7 @@ function * readGenerator(fd, bufferSize) {
     let bytesRead = fs.readSync(fd, buffer, offset, buffer.length - offset, null);
 
     while (bytesRead) {
-        if (bytesRead < buffer.length) {
+        if (bytesRead < buffer.length - offset) {
             offset = yield buffer.slice(0, bytesRead);
         } else {
             offset = yield buffer;

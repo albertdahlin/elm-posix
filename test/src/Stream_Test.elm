@@ -16,6 +16,7 @@ program process =
     [ readElmJson
     , readBytes
     , readEOF
+    , readUtf8
     ]
         |> Test.run
 
@@ -78,7 +79,7 @@ readEOF : Test
 readEOF =
     let
         test =
-            Test.name "read until EOF"
+            Test.name "stream until EOF"
     in
     File.openReadStream File.defaultReadOptions "bytes.bin"
         |> IO.andThen
@@ -94,6 +95,36 @@ readEOF =
 
                     Nothing ->
                         test.pass
+            )
+
+
+readUtf8 : Test
+readUtf8 =
+    let
+        test =
+            Test.name "stream UTF-8"
+    in
+    File.read "utf8.txt"
+        |> IO.andThen
+            (\stringFromFile ->
+                File.openReadStream { bufferSize = 5 } "utf8.txt"
+                    |> IO.andThen
+                        (Stream.pipeTo Stream.utf8Decode
+                            >> Stream.collect (\s acc -> acc ++ s) ""
+                        )
+                    |> IO.map
+                        (\stringFromStream ->
+                            if stringFromFile == stringFromStream then
+                                test.pass
+
+                            else
+                                test.fail
+                                    ("\n"
+                                        ++ stringFromStream
+                                        ++ "\nexpected:\n"
+                                        ++ stringFromFile
+                                    )
+                        )
             )
 
 
