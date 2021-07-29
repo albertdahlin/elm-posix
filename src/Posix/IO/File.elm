@@ -208,11 +208,17 @@ type alias ReadOptions =
     { bufferSize : Int
     }
 
+
 {-| Default read options
+
+Default values:
+
+  - `bufferSize`: `16384`
+
 -}
 defaultReadOptions : ReadOptions
 defaultReadOptions =
-    { bufferSize = 4096
+    { bufferSize = 16384
     }
 
 
@@ -244,7 +250,6 @@ openReadStream_ options filename =
             [ Encode.string filename
             , Encode.int options.bufferSize
             ]
-
         |> IO.andThen IO.fromResult
         |> IO.mapError (handleOpenErrors identity (.msg >> CouldNotOpen))
 
