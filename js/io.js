@@ -17,6 +17,7 @@ function Err(e) {
         data: e
     }
 }
+
 function encodeError(err) {
     return Err({
         code: err.code || 'NONE',
@@ -133,7 +134,7 @@ function createPipeline(pipes) {
 }
 
 function * utf8Decode(it) {
-    let buffer = it.next().value;
+    let buffer = it.next(0).value;
     let partialMbBuffer = null;
 
     while (buffer) {
@@ -144,20 +145,16 @@ function * utf8Decode(it) {
             yield buffer.toString('utf8');
         } else {
             // We have a partial multibyte char at the end.of the buffer.
-            // Let's put it away and prepend it to the next buffer;
-            let slice = buffer.slice(buffer.length - mbOffsetFromEnd);
-            partialMbBuffer = Buffer.from(slice);
             // yield everythin but the partial multibyte char.
             yield buffer.toString('utf8', 0, buffer.length - mbOffsetFromEnd);
+
+
+            // Copy the partial multibyte char to the beginning of the buffer.
+            buffer.copy(buffer, 0, buffer.length - mbOffsetFromEnd, buffer.length);
         }
 
-        buffer = it.next().value;
-
-        if (buffer && partialMbBuffer) {
-            // prepend the partial multibyte char to the beginning.
-            buffer = Buffer.concat([partialMbBuffer, buffer]);
-            partialMbBuffer = null;
-        }
+        // Load more data into the buffer with offset.
+        buffer = it.next(mbOffsetFromEnd).value;
     }
 }
 
@@ -210,20 +207,16 @@ function utf8_getMbWidth(b) {
 
 function * readGenerator(fd) {
     const buffer = Buffer.alloc(8);
-    const offset = 0;
-    const length = buffer.length - offset;
-    let bytesRead = fs.readSync(fd, buffer, offset, length, null);
+    let offset = 0;
+    let bytesRead = fs.readSync(fd, buffer, offset, buffer.length - offset, null);
 
     while (bytesRead) {
         if (bytesRead < buffer.length) {
-            yield buffer.slice(0, bytesRead);
+            offset = yield buffer.slice(0, bytesRead);
         } else {
-            yield buffer;
+            offset = yield buffer;
         }
-        bytesRead = fs.readSync(fd, buffer, offset, length, null);
+        bytesRead = fs.readSync(fd, buffer, offset, buffer.length - offset, null);
     }
 }
 
-function * numbersFrom(n) {
-    while (true) yield n++;
-}
