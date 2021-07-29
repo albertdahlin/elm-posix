@@ -86,10 +86,15 @@ module.exports = {
     openReadStream: function(filename) {
         var key = 'file-' + ++lastKey;
 
-        var file = fs.openSync(filename);
+        try {
+            var file = fs.openSync(filename);
+        } catch (err) {
+            return encodeError(err);
+        }
+
         streams[key] = readGenerator(file);
 
-        return { id: key };
+        return Ok({ id: key });
     },
     readStream: function(pipes) {
         const key = piplineKey(pipes);
@@ -101,13 +106,21 @@ module.exports = {
             streams[key] = iterator;
         }
 
-        let val = iterator.next().value;
+        let val = null;
 
-        if (val == undefined) {
-            return null;
+        try {
+            val = iterator.next().value;
+        } catch (err) {
+            return encodeError(err);
         }
 
-        return val;
+        if (val == undefined) {
+            return Ok(null);
+        } else if (val instanceof Buffer) {
+            return Ok([...val.values()]);
+        }
+
+        return Ok(val);
     },
 }
 

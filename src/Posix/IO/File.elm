@@ -84,6 +84,7 @@ type OpenError
     | MissingPermission String
     | IsDirectory String
     | TooManyFilesOpen String
+    | CouldNotOpen String
 
 
 {-| -}
@@ -116,6 +117,9 @@ errorToString err =
         OpenError (TooManyFilesOpen msg) ->
             msg
 
+        OpenError (CouldNotOpen msg) ->
+            msg
+
         ReadError (CouldNotRead msg) ->
             msg
 
@@ -139,6 +143,7 @@ read_ name =
     callReadFile name
         |> IO.mapError
             (handleOpenErrors
+                OpenError
                 (\error ->
                     case error.code of
                         _ ->
@@ -154,24 +159,28 @@ callReadFile name =
         |> IO.andThen IO.fromResult
 
 
-handleOpenErrors : (Internal.Js.Error -> Error) -> Internal.Js.Error -> Error
-handleOpenErrors handleRest error =
+handleOpenErrors :
+    (OpenError -> err)
+    -> (Internal.Js.Error -> err)
+    -> Internal.Js.Error
+    -> err
+handleOpenErrors wrapOpenErr handleRest error =
     case error.code of
         "ENOENT" ->
             FileDoesNotExist error.msg
-                |> OpenError
+                |> wrapOpenErr
 
         "EACCES" ->
             MissingPermission error.msg
-                |> OpenError
+                |> wrapOpenErr
 
         "EISDIR" ->
             IsDirectory error.msg
-                |> OpenError
+                |> wrapOpenErr
 
         "EMFILE" ->
             TooManyFilesOpen error.msg
-                |> OpenError
+                |> wrapOpenErr
 
         _ ->
             handleRest error
@@ -197,24 +206,31 @@ write_ writeMode content options =
 -}
 openReadStream : Filename -> IO String (Stream Never Bytes)
 openReadStream filename =
-    IO.callJs "openReadStream"
-        [ Encode.string filename
-        ]
-        (Decode.field "id" Decode.string
-            |> Decode.map
-                (\id ->
-                    Internal.Stream.Stream
-                        [ { id = id, args = [] } ]
-                        (\_ -> Encode.null)
-                        Internal.Stream.decodeBytes
-                )
+    Internal.Js.decodeJsResultString
+        (Internal.Stream.decoder
+            (\_ -> Encode.null)
+            Internal.Stream.decodeBytes
         )
+        |> IO.callJs "openReadStream"
+            [ Encode.string filename
+            ]
+        |> IO.andThen IO.fromResult
 
 
 {-| -}
 openReadStream_ : Filename -> IO OpenError (Stream Never Bytes)
 openReadStream_ filename =
-    IO.fail (FileDoesNotExist "")
+    Internal.Js.decodeJsResult
+        (Internal.Stream.decoder
+            (\_ -> Encode.null)
+            Internal.Stream.decodeBytes
+        )
+        |> IO.callJs "openReadStream"
+            [ Encode.string filename
+            ]
+
+        |> IO.andThen IO.fromResult
+        |> IO.mapError (handleOpenErrors identity (.msg >> CouldNotOpen))
 
 
 {-| How to handle writes?

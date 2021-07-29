@@ -18,6 +18,11 @@ decodeJsResult =
         )
 
 
+decodeJsResultString : Decoder ok -> Decoder (Result String ok)
+decodeJsResultString =
+    decodeResult (Decode.field "msg" Decode.string)
+
+
 decodeResult : Decoder err -> Decoder ok -> Decoder (Result err ok)
 decodeResult decodeErr decodeOk =
     Decode.field "result" Decode.string

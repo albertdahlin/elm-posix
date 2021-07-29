@@ -58,6 +58,7 @@ as variations of `List.foldl` but for streams.
 -}
 
 import Bytes exposing (Bytes)
+import Internal.Js
 import Internal.Stream as Internal
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
@@ -114,6 +115,7 @@ utf8Decode =
           , args = []
           }
         ]
+        -- TODO
         (\bytes -> Encode.null)
         Decode.string
 
@@ -155,7 +157,8 @@ read (Internal.Stream pipe _ decoder) =
     IO.callJs "readStream"
         [ Encode.list Internal.encodePipe pipe
         ]
-        (Decode.nullable decoder)
+        (Internal.Js.decodeJsResultString (Decode.nullable decoder))
+        |> IO.andThen IO.fromResult
 
 
 {-| Read a stream until it is exhausted (EOF) and

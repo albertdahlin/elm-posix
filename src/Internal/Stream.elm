@@ -1,9 +1,9 @@
 module Internal.Stream exposing (..)
 
-import Json.Decode as Decode exposing (Decoder)
-import Json.Encode as Encode
 import Bytes exposing (Bytes)
 import Bytes.Encode
+import Json.Decode as Decode exposing (Decoder)
+import Json.Encode as Encode
 
 
 type Stream input output
@@ -16,6 +16,15 @@ encodePipe pipe =
         [ ( "id", Encode.string pipe.id )
         , ( "args", Encode.list identity pipe.args )
         ]
+
+
+decoder : (i -> Encode.Value) -> Decoder o -> Decoder (Stream i o)
+decoder e d =
+    Decode.field "id" Decode.string
+        |> Decode.map
+            (\id ->
+                Stream [ { id = id, args = [] } ] e d
+            )
 
 
 type alias Pipe =
@@ -37,4 +46,3 @@ decodeBytes =
                 >> Bytes.Encode.sequence
                 >> Bytes.Encode.encode
             )
-
