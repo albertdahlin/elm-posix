@@ -15,6 +15,7 @@ program : IO.Process -> IO String ()
 program process =
     [ readElmJson
     , readBytes
+    , readEOF
     ]
         |> Test.run
 
@@ -70,6 +71,29 @@ readBytes =
 
                     Nothing ->
                         test.fail "No bytes read"
+            )
+
+
+readEOF : Test
+readEOF =
+    let
+        test =
+            Test.name "read until EOF"
+    in
+    File.openReadStream File.defaultReadOptions "bytes.bin"
+        |> IO.andThen
+            (\file ->
+                Stream.read file
+                    |> IO.andThen (\_ -> Stream.read file)
+            )
+        |> IO.map
+            (\mbBytes ->
+                case mbBytes of
+                    Just _ ->
+                        test.fail "Not at EOF"
+
+                    Nothing ->
+                        test.pass
             )
 
 
