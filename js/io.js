@@ -82,25 +82,13 @@ module.exports = {
         process.exit(status);
     },
     // Streams
-    createStream: function(stream, args) {
-        switch (stream) {
-            case 'openRead':
-                var key = 'file-' + ++lastKey;
+    openReadStream: function(filename) {
+        var key = 'file-' + ++lastKey;
 
-                var file = fs.openSync(args);
-                streams[key] = readGenerator(file);
+        var file = fs.openSync(filename);
+        streams[key] = readGenerator(file);
 
-                return { id: key };
-
-            case 'numbersFrom':
-                var key = 'gen-' + ++lastKey;
-
-                streams[key] = numbersFrom(args);
-
-                return { id: key };
-        }
-
-        return `Stream ${stream} not implemented`;
+        return { id: key };
     },
     readStream: function(pipes) {
         const key = piplineKey(pipes);
@@ -112,7 +100,13 @@ module.exports = {
             streams[key] = iterator;
         }
 
-        return iterator.next().value;
+        let val = iterator.next().value;
+
+        if (val == undefined) {
+            return null;
+        }
+
+        return val;
     },
 }
 
@@ -126,7 +120,7 @@ function createPipeline(pipes) {
 
     while (pipe = pipes.shift()) {
         switch (pipe.id) {
-            case 'toString':
+            case 'utf8Decode':
                 iterator = utf8Decode(iterator);
                 break;
 

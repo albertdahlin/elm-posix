@@ -58,7 +58,7 @@ to learn more about Streams.
 
 import Bytes exposing (Bytes)
 import Internal.Js
-import Internal.Stream as Stream exposing (Stream)
+import Internal.Stream exposing (Stream)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
 import Posix.IO as IO exposing (IO)
@@ -193,11 +193,22 @@ write_ writeMode content options =
 -- STREAM API
 
 
-{-| Open file for reading. Will fail if the file does not exist.
+{-| Open file for reading.
 -}
 openReadStream : Filename -> IO String (Stream Never Bytes)
 openReadStream filename =
-    IO.fail ""
+    IO.callJs "openReadStream"
+        [ Encode.string filename
+        ]
+        (Decode.field "id" Decode.string
+            |> Decode.map
+                (\id ->
+                    Internal.Stream.Stream
+                        [ { id = id, args = [] } ]
+                        (\_ -> Encode.null)
+                        Internal.Stream.decodeBytes
+                )
+        )
 
 
 {-| -}
