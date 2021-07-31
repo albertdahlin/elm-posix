@@ -262,6 +262,11 @@ const app = elmApp.init({ flags: flags });
 app.ports.send.subscribe(function(msg) {
     const fn = stdIo[msg.fn];
 
+    if (!fn) {
+        console.error(\`Function "\${msg.fn}" does not exists in javascript.\`);
+        process.exit(255);
+    }
+
     var result = fn.apply(null, msg.args);
 
     if (result instanceof Promise) {
