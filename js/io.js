@@ -77,6 +77,9 @@ module.exports = {
     randomSeed: function() {
         return crypto.randomBytes(4).readInt32LE();
     },
+    print: function(str) {
+        fs.writeFileSync(1, str);
+    },
     panic: function(msg) {
         console.error(msg);
         process.exit(255);

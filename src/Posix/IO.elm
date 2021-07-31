@@ -126,8 +126,8 @@ printLn str =
 print : String -> IO x ()
 print str =
     callJs
-        "fwrite"
-        [ Encode.int 1, Encode.string str ]
+        "print"
+        [ Encode.string str ]
         (Decode.succeed ())
 
 
