@@ -89,7 +89,7 @@ module.exports = {
     },
     // Streams
     openReadStream: function(filename, bufferSize) {
-        var key = 'file-' + ++lastKey;
+        var key = 'read-' + ++lastKey;
 
         try {
             var file = fs.openSync(filename);
@@ -97,7 +97,20 @@ module.exports = {
             return encodeError(err);
         }
 
-        streams[key] = readGenerator(file, bufferSize);
+        streams[key] = it => readGenerator(file, bufferSize);
+
+        return Ok({ id: key });
+    },
+    openWriteStream: function(filename, options) {
+        var key = 'write-' + ++lastKey;
+
+        try {
+            var file = fs.openSync(filename, options.flag, options.mode);
+        } catch (err) {
+            return encodeError(err);
+        }
+
+        streams[key] = it => writeGenerator(file, it);
 
         return Ok({ id: key });
     },
@@ -127,14 +140,22 @@ module.exports = {
 
         return Ok(val);
     },
+    writeStream: function(pipes, data) {
+        if (Array.isArray(data)) {
+            data = Buffer.from(data);
+        }
+        let iterator = createPipeline(pipes, valueToIterator(data));
+        let bytesWritten = iterator.next().value
+
+        return Ok(bytesWritten);
+    },
 }
 
 function piplineKey(pipes) {
-    return pipes.map(p => p.id).join(':');
+    return 'pipe:' + pipes.map(p => p.id).join(':');
 }
 
-function createPipeline(pipes) {
-    let iterator = null;
+function createPipeline(pipes, iterator) {
     let pipe = null;
 
     while (pipe = pipes.shift()) {
@@ -143,12 +164,30 @@ function createPipeline(pipes) {
                 iterator = utf8Decode(iterator);
                 break;
 
+            case 'utf8Encode':
+                iterator = utf8Encode(iterator);
+                break;
+
             default:
-                iterator = streams[pipe.id];
+                iterator = streams[pipe.id](iterator);
         }
     }
 
     return iterator;
+}
+
+function * utf8Encode(iterator) {
+    let data = iterator.next().value;
+
+    while (data) {
+        if (data instanceof Buffer) {
+            yield data;
+        } else {
+            yield Buffer.from(data);
+        }
+
+        data = iterator.next().value;
+    }
 }
 
 function * utf8Decode(it) {
@@ -238,3 +277,15 @@ function * readGenerator(fd, bufferSize) {
     }
 }
 
+function * writeGenerator(fd, iterator) {
+    let data = iterator.next().value;
+
+    while (data) {
+        yield fs.writeSync(fd, data);
+        data = iterator.next().value;
+    }
+}
+
+function * valueToIterator(data) {
+    yield data;
+}

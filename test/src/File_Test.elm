@@ -22,6 +22,7 @@ program process =
     , testIsDir
     , testWrite
     , testWriteExclusive
+    , testAppend
     ]
         |> Test.run
 
@@ -200,6 +201,36 @@ testWriteExclusive =
                                 File.writeErrorToString err
                                     |> test.fail
                                     |> IO.return
+                    )
+            )
+
+
+testAppend : Test
+testAppend =
+    let
+        test =
+            Test.name "Write Append"
+
+        testFile =
+            "tmp/write-test-append.txt"
+
+        append content =
+            File.write
+                (File.CreateIfNotExists File.Append Permission.default)
+                testFile
+                content
+    in
+    append "A"
+        |> IO.and (append "B")
+        |> IO.and
+            (File.read testFile
+                |> IO.map
+                    (\content ->
+                        if content == "AB" then
+                            test.pass
+
+                        else
+                            test.fail "Content read does not match"
                     )
             )
 

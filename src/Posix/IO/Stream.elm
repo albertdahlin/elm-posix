@@ -115,8 +115,7 @@ utf8Decode =
           , args = []
           }
         ]
-        -- TODO
-        (\bytes -> Encode.null)
+        Internal.encodeBytes
         Decode.string
 
 
@@ -124,7 +123,13 @@ utf8Decode =
 -}
 utf8Encode : Stream String Bytes
 utf8Encode =
-    Internal.notImplemented
+    Internal.Stream
+        [ { id = "utf8Encode"
+          , args = []
+          }
+        ]
+        Encode.string
+        (Internal.decodeBytes)
 
 
 {-| Read stream line by line
@@ -208,8 +213,13 @@ forEach fn stream =
 {-| Write data to a stream.
 -}
 write : input -> Stream input x -> IO String ()
-write str stream =
-    IO.fail ""
+write input (Internal.Stream pipes encode _) =
+    IO.callJs "writeStream"
+        [ Encode.list Internal.encodePipe pipes
+        , encode input
+        ]
+        (Internal.Js.decodeJsResultString (Decode.succeed ()))
+        |> IO.andThen IO.fromResult
 
 
 {-| Same as `read` but with a typed error.

@@ -140,14 +140,15 @@ writeErrorToString err =
 {-| -}
 read : Filename -> IO String String
 read name =
-    callReadFile name
-        |> IO.mapError .msg
+    Internal.Js.decodeJsResultString Decode.string
+        |> callReadFile name
 
 
 {-| -}
 read_ : Filename -> IO ReadError String
 read_ name =
-    callReadFile name
+    Internal.Js.decodeJsResult Decode.string
+        |> callReadFile name
         |> IO.mapError
             (handleOpenErrors
                 CouldNotOpenRead
@@ -159,9 +160,8 @@ read_ name =
             )
 
 
-callReadFile : String -> IO Internal.Js.Error String
-callReadFile name =
-    Internal.Js.decodeJsResult Decode.string
+callReadFile name decoder =
+    decoder
         |> IO.callJs "readFile" [ Encode.string name ]
         |> IO.andThen IO.fromResult
 
@@ -200,33 +200,35 @@ handleOpenErrors wrapOpenErr handleRest error =
 {-| -}
 write : WriteMode -> Filename -> String -> IO String ()
 write writeMode name content =
-    callWriteFile writeMode name content
-        |> IO.mapError .msg
+    Internal.Js.decodeJsResultString (Decode.succeed ())
+        |> callWriteFile writeMode name content
 
 
 {-| -}
 write_ : WriteMode -> Filename -> String -> IO WriteError ()
 write_ writeMode name content =
-    callWriteFile writeMode name content
+    Internal.Js.decodeJsResult (Decode.succeed ())
+        |> callWriteFile writeMode name content
         |> IO.mapError
             (handleOpenErrors
                 CouldNotOpenWrite
                 (\error ->
                     case error.code of
-
                         _ ->
                             CouldNotWrite error.msg
                 )
             )
 
-callWriteFile writeMode name content =
-    Internal.Js.decodeJsResult (Decode.succeed ())
+
+callWriteFile writeMode name content decoder =
+    decoder
         |> IO.callJs "writeFile"
             [ Encode.string name
             , Encode.string content
             , encodeWriteMode writeMode
             ]
         |> IO.andThen IO.fromResult
+
 
 
 -- STREAM API
@@ -257,21 +259,19 @@ defaultReadOptions =
 openReadStream : ReadOptions -> Filename -> IO String (Stream Never Bytes)
 openReadStream options filename =
     Internal.Js.decodeJsResultString
-        (Internal.Stream.decoder
-            (\_ -> Encode.null)
-            Internal.Stream.decodeBytes
-        )
-        |> IO.callJs "openReadStream"
-            [ Encode.string filename
-            , Encode.int options.bufferSize
-            ]
-        |> IO.andThen IO.fromResult
+        |> callOpenReadStream options filename
 
 
 {-| -}
 openReadStream_ : ReadOptions -> Filename -> IO OpenError (Stream Never Bytes)
 openReadStream_ options filename =
     Internal.Js.decodeJsResult
+        |> callOpenReadStream options filename
+        |> IO.mapError (handleOpenErrors identity (.msg >> CouldNotOpen))
+
+
+callOpenReadStream options filename makeDecoder =
+    makeDecoder
         (Internal.Stream.decoder
             (\_ -> Encode.null)
             Internal.Stream.decodeBytes
@@ -281,7 +281,6 @@ openReadStream_ options filename =
             , Encode.int options.bufferSize
             ]
         |> IO.andThen IO.fromResult
-        |> IO.mapError (handleOpenErrors identity (.msg >> CouldNotOpen))
 
 
 {-| How to handle writes?
@@ -342,20 +341,16 @@ encodeWriteMode writeMode =
 
 openWriteStream : WriteMode -> Filename -> IO String (Stream Bytes Never)
 openWriteStream writeMode filename =
-    case writeMode of
-        CreateIfNotExists whenExists mask ->
-            case whenExists of
-                Truncate ->
-                    --"w" mask
-                    IO.fail ""
-
-                Append ->
-                    --"a" mask
-                    IO.fail ""
-
-        FailIfExists mask ->
-            -- "wx"
-            IO.fail ""
+    Internal.Js.decodeJsResultString
+        (Internal.Stream.decoder
+            Internal.Stream.encodeBytes
+            (Decode.fail "")
+        )
+        |> IO.callJs "openWriteStream"
+            [ Encode.string filename
+            , encodeWriteMode writeMode
+            ]
+        |> IO.andThen IO.fromResult
 
 
 {-| -}

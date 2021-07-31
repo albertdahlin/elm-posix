@@ -1,6 +1,7 @@
 module Internal.Stream exposing (..)
 
 import Bytes exposing (Bytes)
+import Bytes.Decode
 import Bytes.Encode
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
@@ -41,8 +42,41 @@ notImplemented =
 decodeBytes : Decoder Bytes
 decodeBytes =
     Decode.list Decode.int
-        |> Decode.map
-            (List.map Bytes.Encode.unsignedInt8
-                >> Bytes.Encode.sequence
-                >> Bytes.Encode.encode
-            )
+        |> Decode.map listToBytes
+
+
+listToBytes : List Int -> Bytes
+listToBytes =
+    List.map Bytes.Encode.unsignedInt8
+        >> Bytes.Encode.sequence
+        >> Bytes.Encode.encode
+
+
+encodeBytes : Bytes -> Encode.Value
+encodeBytes bytes =
+    bytesToList bytes
+        |> Maybe.map (Encode.list Encode.int)
+        |> Maybe.withDefault Encode.null
+
+
+bytesToList : Bytes -> Maybe (List Int)
+bytesToList bytes =
+    Bytes.Decode.decode
+        (decodeBytesList
+            |> Bytes.Decode.loop
+                ( Bytes.width bytes, [] )
+        )
+        bytes
+
+
+decodeBytesList :
+    ( Int, List Int )
+    -> Bytes.Decode.Decoder (Bytes.Decode.Step ( Int, List Int ) (List Int))
+decodeBytesList ( n, xs ) =
+    if n <= 0 then
+        Bytes.Decode.succeed (Bytes.Decode.Done <| List.reverse xs)
+
+    else
+        Bytes.Decode.map
+            (\x -> Bytes.Decode.Loop ( n - 1, x :: xs ))
+            Bytes.Decode.unsignedInt8
