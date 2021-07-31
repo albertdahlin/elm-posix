@@ -5,6 +5,9 @@ module File_Test exposing (..)
 import Json.Decode as Decode
 import Posix.IO as IO exposing (IO)
 import Posix.IO.File as File
+import Posix.IO.File.Permission as Permission
+import Posix.IO.Random
+import Random
 import Test exposing (Test)
 
 
@@ -17,6 +20,8 @@ program process =
     , testFileNotFound
     , testNoPermission
     , testIsDir
+    , testWrite
+    , testWriteExclusive
     ]
         |> Test.run
 
@@ -134,6 +139,70 @@ testIsDir =
                             |> test.fail
                             |> IO.return
             )
+
+
+testWrite : Test
+testWrite =
+    let
+        test =
+            Test.name "Write"
+
+        testFile =
+            "tmp/write-test.txt"
+    in
+    Posix.IO.Random.generate (Random.int 1 1000000)
+        |> IO.andThen
+            (\num ->
+                File.write
+                    (File.CreateIfNotExists File.Truncate Permission.default)
+                    testFile
+                    (String.fromInt num)
+                    |> IO.and
+                        (File.read testFile
+                            |> IO.map
+                                (\content ->
+                                    if content == String.fromInt num then
+                                        test.pass
+
+                                    else
+                                        test.fail "Content read does not match"
+                                )
+                        )
+            )
+
+
+testWriteExclusive : Test
+testWriteExclusive =
+    let
+        test =
+            Test.name "Write Exclusive Error"
+
+        testFile =
+            "tmp/write-test-exclusive.txt"
+    in
+    File.write
+        (File.CreateIfNotExists File.Truncate Permission.default)
+        testFile
+        "test"
+        |> IO.and
+            (File.write_
+                (File.FailIfExists Permission.default)
+                testFile
+                "test"
+                |> IO.map (\_ -> test.fail "File write should not succeed")
+                |> IO.recover
+                    (\err ->
+                        case err of
+                            File.CouldNotOpenWrite (File.FileAlreadyExists _) ->
+                                IO.return test.pass
+
+                            _ ->
+                                File.writeErrorToString err
+                                    |> test.fail
+                                    |> IO.return
+                    )
+            )
+
 
 decodeTypeField =
     Decode.field "type" Decode.string

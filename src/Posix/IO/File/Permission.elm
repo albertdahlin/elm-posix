@@ -1,17 +1,19 @@
 module Posix.IO.File.Permission exposing
     ( Permission, readWrite, true, false
-    , Mask(..), toMask, fromMask, fromOctal
+    , Mask(..), default, toMask, fromMask, fromOctal
     )
 
 {-|
 
+
 # Permission Record
+
 @docs Permission, readWrite, true, false
 
 
 # Permission bitmask
 
-@docs Mask, toMask, fromMask, fromOctal
+@docs Mask, default, toMask, fromMask, fromOctal
 
 -}
 
@@ -21,8 +23,8 @@ import Bitwise
 {-| The permission bitmask is wrapped to avoid confusion with a
 normal Int
 -}
-type Mask =
-    Mask Int
+type Mask
+    = Mask Int
 
 
 {-| -}
@@ -98,6 +100,13 @@ readWrite =
     , allWrite = True
     , allExecute = False
     }
+
+
+{-| Default mask, 0666
+-}
+default : Mask
+default =
+    Mask 438
 
 
 {-| Create a bitmask from a record.

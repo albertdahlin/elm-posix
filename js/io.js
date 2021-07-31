@@ -34,11 +34,13 @@ module.exports = {
             return encodeError(err);
         }
     },
-    fwrite: function(fd, content) {
-        fs.writeSync(fd, content);
-    },
-    fread: function(fd) {
-        return fs.readFileSync(fd).toString();
+    writeFile: function(name, content, options) {
+        try {
+            fs.writeFileSync(name, content, options);
+            return Ok(null);
+        } catch (err) {
+            return encodeError(err);
+        }
     },
     fopen: function(filename, flags) {
         try {

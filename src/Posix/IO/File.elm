@@ -76,6 +76,7 @@ type OpenError
     | MissingPermission String
     | IsDirectory String
     | TooManyFilesOpen String
+    | FileAlreadyExists String
     | CouldNotOpen String
 
 
@@ -88,8 +89,6 @@ type ReadError
 {-| -}
 type WriteError
     = CouldNotOpenWrite OpenError
-    | CouldNotCreateFile String
-    | FileAlreadyExists String
     | CouldNotWrite String
 
 
@@ -107,6 +106,9 @@ openErrorToString err =
             msg
 
         TooManyFilesOpen msg ->
+            msg
+
+        FileAlreadyExists msg ->
             msg
 
         CouldNotOpen msg ->
@@ -130,12 +132,6 @@ writeErrorToString err =
     case err of
         CouldNotOpenWrite openErr ->
             openErrorToString openErr
-
-        CouldNotCreateFile msg ->
-            msg
-
-        FileAlreadyExists msg ->
-            msg
 
         CouldNotWrite msg ->
             msg
@@ -193,6 +189,10 @@ handleOpenErrors wrapOpenErr handleRest error =
             TooManyFilesOpen error.msg
                 |> wrapOpenErr
 
+        "EEXIST" ->
+            FileAlreadyExists error.msg
+                |> wrapOpenErr
+
         _ ->
             handleRest error
 
@@ -200,14 +200,33 @@ handleOpenErrors wrapOpenErr handleRest error =
 {-| -}
 write : WriteMode -> Filename -> String -> IO String ()
 write writeMode name content =
-    IO.return ()
+    callWriteFile writeMode name content
+        |> IO.mapError .msg
 
 
 {-| -}
 write_ : WriteMode -> Filename -> String -> IO WriteError ()
-write_ writeMode content options =
-    IO.return ()
+write_ writeMode name content =
+    callWriteFile writeMode name content
+        |> IO.mapError
+            (handleOpenErrors
+                CouldNotOpenWrite
+                (\error ->
+                    case error.code of
 
+                        _ ->
+                            CouldNotWrite error.msg
+                )
+            )
+
+callWriteFile writeMode name content =
+    Internal.Js.decodeJsResult (Decode.succeed ())
+        |> IO.callJs "writeFile"
+            [ Encode.string name
+            , Encode.string content
+            , encodeWriteMode writeMode
+            ]
+        |> IO.andThen IO.fromResult
 
 
 -- STREAM API
@@ -299,6 +318,28 @@ type WhenExists
             "my.log"
 
 -}
+encodeWriteMode : WriteMode -> Encode.Value
+encodeWriteMode writeMode =
+    let
+        encodeObj mode mask =
+            Encode.object
+                [ ( "flag", Encode.string mode )
+                , ( "mode", Encode.int mask )
+                ]
+    in
+    case writeMode of
+        CreateIfNotExists whenExists (Permission.Mask mask) ->
+            case whenExists of
+                Truncate ->
+                    encodeObj "w" mask
+
+                Append ->
+                    encodeObj "a" mask
+
+        FailIfExists (Permission.Mask mask) ->
+            encodeObj "wx" mask
+
+
 openWriteStream : WriteMode -> Filename -> IO String (Stream Bytes Never)
 openWriteStream writeMode filename =
     case writeMode of
