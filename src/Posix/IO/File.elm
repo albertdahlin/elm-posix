@@ -338,7 +338,8 @@ encodeWriteMode writeMode =
         FailIfExists (Permission.Mask mask) ->
             encodeObj "wx" mask
 
-
+{-| Open a file as a writable stream.
+-}
 openWriteStream : WriteMode -> Filename -> IO String (Stream Bytes Never)
 openWriteStream writeMode filename =
     Internal.Js.decodeJsResultString
@@ -356,4 +357,15 @@ openWriteStream writeMode filename =
 {-| -}
 openWriteStream_ : WriteMode -> Filename -> IO OpenError (Stream Bytes Never)
 openWriteStream_ writeMode filename =
-    IO.fail (FileDoesNotExist "")
+    Internal.Js.decodeJsResult
+        (Internal.Stream.decoder
+            Internal.Stream.encodeBytes
+            (Decode.fail "")
+        )
+        |> IO.callJs "openWriteStream"
+            [ Encode.string filename
+            , encodeWriteMode writeMode
+            ]
+        |> IO.andThen IO.fromResult
+        |> IO.mapError (handleOpenErrors identity (.msg >> CouldNotOpen))
+
