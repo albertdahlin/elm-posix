@@ -61,7 +61,7 @@ testRead_ =
                     Err e ->
                         test.fail (Decode.errorToString e)
             )
-        |> IO.mapError File.errorToString
+        |> IO.mapError File.readErrorToString
 
 
 testFileNotFound : Test
@@ -78,11 +78,11 @@ testFileNotFound =
         |> IO.recover
             (\err ->
                 case err of
-                    File.OpenError (File.FileDoesNotExist msg) ->
+                    File.CouldNotOpenRead (File.FileDoesNotExist msg) ->
                         IO.return test.pass
 
                     _ ->
-                        File.errorToString err
+                        File.readErrorToString err
                             |> test.fail
                             |> IO.return
             )
@@ -102,11 +102,11 @@ testNoPermission =
         |> IO.recover
             (\err ->
                 case err of
-                    File.OpenError (File.MissingPermission msg) ->
+                    File.CouldNotOpenRead (File.MissingPermission msg) ->
                         IO.return test.pass
 
                     _ ->
-                        File.errorToString err
+                        File.readErrorToString err
                             |> test.fail
                             |> IO.return
             )
@@ -126,11 +126,11 @@ testIsDir =
         |> IO.recover
             (\err ->
                 case err of
-                    File.OpenError (File.IsDirectory msg) ->
+                    File.CouldNotOpenRead (File.IsDirectory msg) ->
                         IO.return test.pass
 
                     _ ->
-                        File.errorToString err
+                        File.readErrorToString err
                             |> test.fail
                             |> IO.return
             )

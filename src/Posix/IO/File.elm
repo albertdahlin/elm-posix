@@ -2,7 +2,7 @@ module Posix.IO.File exposing
     ( Filename
     , read, write
     , WriteMode(..), WhenExists(..)
-    , read_, write_, Error(..), OpenError(..), ReadError(..), WriteError(..), errorToString
+    , read_, write_, ReadError(..), WriteError(..), OpenError(..), readErrorToString, writeErrorToString, openErrorToString
     , openReadStream, defaultReadOptions, ReadOptions, openWriteStream
     , openReadStream_, openWriteStream_
     )
@@ -36,7 +36,7 @@ Read or write a whole file at once.
 
 ## Read / Write with typed Error
 
-@docs read_, write_, Error, OpenError, ReadError, WriteError, errorToString
+@docs read_, write_, ReadError, WriteError, OpenError, readErrorToString, writeErrorToString, openErrorToString
 
 
 # Stream API
@@ -71,14 +71,6 @@ type alias Filename =
 
 
 {-| -}
-type Error
-    = OpenError OpenError
-    | ReadError ReadError
-    | WriteError WriteError
-    | Other String
-
-
-{-| -}
 type OpenError
     = FileDoesNotExist String
     | MissingPermission String
@@ -89,44 +81,63 @@ type OpenError
 
 {-| -}
 type ReadError
-    = CouldNotRead String
+    = CouldNotOpenRead OpenError
+    | CouldNotRead String
 
 
 {-| -}
 type WriteError
-    = CouldNotCreateFile String
+    = CouldNotOpenWrite OpenError
+    | CouldNotCreateFile String
     | FileAlreadyExists String
+    | CouldNotWrite String
 
 
 {-| -}
-errorToString : Error -> String
-errorToString err =
+openErrorToString : OpenError -> String
+openErrorToString err =
     case err of
-        Other msg ->
+        FileDoesNotExist msg ->
             msg
 
-        OpenError (FileDoesNotExist msg) ->
+        MissingPermission msg ->
             msg
 
-        OpenError (MissingPermission msg) ->
+        IsDirectory msg ->
             msg
 
-        OpenError (IsDirectory msg) ->
+        TooManyFilesOpen msg ->
             msg
 
-        OpenError (TooManyFilesOpen msg) ->
+        CouldNotOpen msg ->
             msg
 
-        OpenError (CouldNotOpen msg) ->
+
+{-| -}
+readErrorToString : ReadError -> String
+readErrorToString err =
+    case err of
+        CouldNotOpenRead openErr ->
+            openErrorToString openErr
+
+        CouldNotRead msg ->
             msg
 
-        ReadError (CouldNotRead msg) ->
+
+{-| -}
+writeErrorToString : WriteError -> String
+writeErrorToString err =
+    case err of
+        CouldNotOpenWrite openErr ->
+            openErrorToString openErr
+
+        CouldNotCreateFile msg ->
             msg
 
-        WriteError (FileAlreadyExists msg) ->
+        FileAlreadyExists msg ->
             msg
 
-        WriteError (CouldNotCreateFile msg) ->
+        CouldNotWrite msg ->
             msg
 
 
@@ -138,16 +149,16 @@ read name =
 
 
 {-| -}
-read_ : Filename -> IO Error String
+read_ : Filename -> IO ReadError String
 read_ name =
     callReadFile name
         |> IO.mapError
             (handleOpenErrors
-                OpenError
+                CouldNotOpenRead
                 (\error ->
                     case error.code of
                         _ ->
-                            ReadError (CouldNotRead error.msg)
+                            CouldNotRead error.msg
                 )
             )
 
@@ -193,7 +204,7 @@ write writeMode name content =
 
 
 {-| -}
-write_ : WriteMode -> Filename -> String -> IO Error ()
+write_ : WriteMode -> Filename -> String -> IO WriteError ()
 write_ writeMode content options =
     IO.return ()
 
