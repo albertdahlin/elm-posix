@@ -2,6 +2,7 @@ module ReadFile exposing (..)
 
 {-| -}
 
+import Json.Decode exposing (Decoder)
 import Posix.IO as IO exposing (IO)
 import Posix.IO.File as File
 
@@ -10,15 +11,19 @@ import Posix.IO.File as File
 -}
 program : IO.Process -> IO String ()
 program process =
-    File.read (getFile process.argv)
-        |> IO.andThen IO.printLn
+    File.read "elm.json"
+        |> IO.andThen
+            (\elmJson ->
+                case Json.Decode.decodeString decoder elmJson of
+                    Ok elmVersion ->
+                        IO.printLn ("Elm version is: " ++ elmVersion)
+
+                    Err err ->
+                        IO.fail (Json.Decode.errorToString err)
+            )
 
 
-getFile : List String -> String
-getFile list =
-    case list of
-        [ _, filename ] ->
-            filename
+decoder : Decoder String
+decoder =
+    Json.Decode.field "elm-version" Json.Decode.string
 
-        _ ->
-            "elm.json"

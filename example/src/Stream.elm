@@ -1,10 +1,8 @@
 module Stream exposing (..)
 
-{-| Loop implementation
+{-| Example of reading a stream'
 -}
 
-import Json.Decode as Decode exposing (Decoder)
-import Json.Encode as Encode
 import Posix.IO as IO exposing (IO)
 import Posix.IO.File as File
 import Posix.IO.Stream as Stream exposing (Stream)
@@ -14,16 +12,7 @@ import Posix.IO.Stream as Stream exposing (Stream)
 -}
 program : IO.Process -> IO String ()
 program process =
-    let
-        filename =
-            case process.argv of
-                [ _, str ] ->
-                    str
-
-                _ ->
-                    "elm.json"
-    in
-    File.openReadStream { bufferSize = 10 } filename
+    File.openReadStream { bufferSize = 10 } "elm.json"
         |> IO.andThen
             (\src ->
                 src
