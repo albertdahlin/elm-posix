@@ -77,6 +77,7 @@ type OpenError
     | IsDirectory String
     | TooManyFilesOpen String
     | FileAlreadyExists String
+    | FilenameTooLong String
     | CouldNotOpen String
 
 
@@ -109,6 +110,9 @@ openErrorToString err =
             msg
 
         FileAlreadyExists msg ->
+            msg
+
+        FilenameTooLong msg ->
             msg
 
         CouldNotOpen msg ->
@@ -191,6 +195,10 @@ handleOpenErrors wrapOpenErr handleRest error =
 
         "EEXIST" ->
             FileAlreadyExists error.msg
+                |> wrapOpenErr
+
+        "ENAMETOOLONG" ->
+            FilenameTooLong error.msg
                 |> wrapOpenErr
 
         _ ->
