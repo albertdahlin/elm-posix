@@ -168,12 +168,45 @@ function createPipeline(pipes, iterator) {
                 iterator = utf8Encode(iterator);
                 break;
 
+            case 'line':
+                iterator = splitLine(iterator);
+                break;
+
             default:
                 iterator = streams[pipe.id](iterator);
         }
     }
 
     return iterator;
+}
+
+function * splitLine(iterator) {
+    let val = iterator.next().value;
+    let buf = [];
+
+    while (val) {
+        let lines = val.split("\n");
+
+        if (lines.length == 1) {
+            buf.push(lines[0]);
+        } else {
+            let last = lines.pop();
+            let prev = buf.join('');
+            let first = lines.shift();
+            buf = [ last ];
+
+            yield prev + first;
+            for (let line of lines) {
+                yield line;
+            }
+        }
+
+        val = iterator.next().value;
+    }
+
+    if (buf.length > 0 ) {
+        yield buf.join('');
+    }
 }
 
 function * utf8Encode(iterator) {

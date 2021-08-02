@@ -120,6 +120,12 @@ utf8Decode =
 
 
 {-| Convert an utf8 string to bytes.
+
+    stdOutAsString : Stream String Never
+    stdOutAsString =
+        utf8Encode
+            |> pipeTo stdOut
+
 -}
 utf8Encode : Stream String Bytes
 utf8Encode =
@@ -129,14 +135,21 @@ utf8Encode =
           }
         ]
         Encode.string
-        (Internal.decodeBytes)
+        Internal.decodeBytes
 
 
-{-| Read stream line by line
+{-| Read stream line by line, splitting on the NL char.
+
 -}
 line : Stream String String
 line =
-    Internal.notImplemented
+    Internal.Stream
+        [ { id = "line"
+          , args = []
+          }
+        ]
+        Encode.string
+        Decode.string
 
 
 
@@ -146,8 +159,11 @@ line =
 {-| Stream read errors
 -}
 type ReadError
-    = EOF
-    | TODO_ReadError
+    = EOF String
+    | CouldNotRead
+        { code : String
+        , message : String
+        }
 
 
 {-| Read one value from a stream. Will block until one value can be returned.
@@ -229,7 +245,14 @@ read_ (Internal.Stream pipe _ decoder) =
     IO.callJs "readStream"
         [ Encode.list Internal.encodePipe pipe
         ]
-        (Decode.nullable decoder)
+        (Internal.Js.decodeJsResult (Decode.nullable decoder))
+        |> IO.andThen IO.fromResult
+        |> IO.mapError
+            (\err ->
+                case err.code of
+                    _ ->
+                        CouldNotRead { code = err.code, message = err.msg }
+            )
         |> IO.andThen
             (\mb ->
                 case mb of
@@ -237,26 +260,41 @@ read_ (Internal.Stream pipe _ decoder) =
                         IO.return v
 
                     Nothing ->
-                        IO.fail EOF
+                        IO.fail (EOF "End-of-file")
             )
 
 
 {-| Stream write errors
 -}
 type WriteError
-    = TODO_WriteError
+    = BrokenPipe String
+    | CouldNotWrite { code : String, message : String }
 
 
 {-| Same as `write` but with a typed error.
 -}
 write_ : input -> Stream input x -> IO WriteError ()
-write_ str stream =
-    IO.fail TODO_WriteError
+write_ input (Internal.Stream pipes encode _) =
+    IO.callJs "writeStream"
+        [ Encode.list Internal.encodePipe pipes
+        , encode input
+        ]
+        (Internal.Js.decodeJsResult (Decode.succeed ()))
+        |> IO.andThen IO.fromResult
+        |> IO.mapError
+            (\err ->
+                case err.code of
+                    "EPIPE" ->
+                        BrokenPipe err.msg
+
+                    _ ->
+                        CouldNotWrite { code = err.code, message = err.msg }
+            )
 
 
 {-| Connect the output of one stream to the input of another.
 
-    readLineByLine : Stream Never (List String)
+    readLineByLine : Stream Never String
     readLineByLine =
         stdIn
             |> pipeTo gunzip

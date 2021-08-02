@@ -3,7 +3,7 @@ module Stream_Test exposing (..)
 import Bytes exposing (Bytes)
 import Bytes.Decode
 import Bytes.Encode
-import Json.Decode as Decode
+import Json.Decode as Decode exposing (Decoder)
 import Posix.IO as IO exposing (IO)
 import Posix.IO.File as File
 import Posix.IO.File.Permission as Permission
@@ -21,6 +21,7 @@ program process =
     , readUtf8
     , writeUtf8
     , writeBin
+    , streamLines
     ]
         |> Test.run
 
@@ -177,7 +178,7 @@ writeBin =
             "tmp/stream-write-bin.txt"
 
         testData =
-            [ 0xFF, 0x80 , 0x40, 0x20, 0x00, 0x01, 0x02, 0x04 ]
+            [ 0xFF, 0x80, 0x40, 0x20, 0x00, 0x01, 0x02, 0x04 ]
     in
     File.openWriteStream (File.CreateIfNotExists File.Truncate Permission.default) testFile
         |> IO.andThen
@@ -214,6 +215,45 @@ writeBin =
             )
 
 
+streamLines : Test
+streamLines =
+    let
+        testFile =
+            "utf8.txt"
+
+        test =
+            Test.name "stream lines"
+    in
+    File.read testFile
+        |> IO.andThen
+            (\content ->
+                File.openReadStream { bufferSize = 10 } testFile
+                    |> IO.andThen
+                        (Stream.pipeTo Stream.utf8Decode
+                            >> Stream.pipeTo Stream.line
+                            >> Stream.collect (\line count -> count + 1) 0
+                        )
+                    |> IO.map
+                        (\streamLineCount ->
+                            let
+                                realLineCount =
+                                    String.split "\n" content
+                                        |> List.length
+                            in
+                            if realLineCount == streamLineCount then
+                                test.pass
+
+                            else
+                                "Got line count: "
+                                    ++ String.fromInt streamLineCount
+                                    ++ ", expecting: "
+                                    ++ String.fromInt realLineCount
+                                    |> test.fail
+                        )
+            )
+
+
+decodeTypeField : Decoder String
 decodeTypeField =
     Decode.field "type" Decode.string
 
