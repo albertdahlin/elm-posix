@@ -46,6 +46,7 @@ type alias PortOut msg =
 type Handler a
     = CallJs ArgsToJs (Decoder a)
     | PerformTask (Task Never a)
+    | Return a
 
 
 type Model
@@ -69,6 +70,9 @@ map fn handler =
             Task.map fn task
                 |> PerformTask
 
+        Return a ->
+            Return (fn a)
+
 
 next : (ArgsToJs -> Cmd Msg) -> Proc -> ( Model, Cmd Msg )
 next callJs (Proc handler) =
@@ -78,6 +82,9 @@ next callJs (Proc handler) =
 
         PerformTask task ->
             ( WaitingForTask, Task.perform GotNext task )
+
+        Return proc ->
+            next callJs proc
 
 
 update : (ArgsToJs -> Cmd Msg) -> Msg -> Model -> ( Model, Cmd Msg )

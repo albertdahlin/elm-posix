@@ -88,8 +88,8 @@ type alias Process =
 {-| -}
 return : a -> IO err a
 return a =
-    Task.succeed a
-        |> performTask
+    Proc.Return a
+        |> embed
 
 
 {-| -}
@@ -113,7 +113,6 @@ fromResult result =
 
         Err err ->
             fail err
-
 
 
 {-| -}
@@ -149,7 +148,7 @@ sleep delay =
 performTask : Task Never a -> IO x a
 performTask task =
     Proc.PerformTask task
-        |> embend
+        |> embed
 
 
 {-| Attempt a Task that can fail.
@@ -236,7 +235,7 @@ src/MyModule.elm
             "sleep"
             [ Encode.float delay
             ]
-            (Decode.succeed ()) -- Ignore return value
+            (Decode.succeed ())
 
 Run like this:
 
@@ -248,7 +247,7 @@ elm.cli run --ext js/my-functions.js src/MyModule.elm
 callJs : String -> List Value -> Decoder a -> IO x a
 callJs fn args decoder =
     Proc.CallJs { fn = fn, args = args } decoder
-        |> embend
+        |> embed
 
 
 {-| Exit to shell with a status code
@@ -262,8 +261,8 @@ exit status =
 
 
 {-| -}
-embend : Proc.Handler a -> IO x a
-embend handler =
+embed : Proc.Handler a -> IO x a
+embed handler =
     \next ->
         Proc.Proc (Proc.map (Ok >> next) handler)
 
