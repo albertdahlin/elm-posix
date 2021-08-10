@@ -1,8 +1,8 @@
 module Posix.IO.Directory exposing
-    ( Path, Entry, resolve, absolutePath, fileType, FileType(..)
+    ( Path, Entry, FileType(..)
     , stat, Stat
     , Pattern, list
-    , delete, copy, rename, symlink, mkdir
+    , copy, rename, delete, symlink, mkdir
     , setPermission, addPermission, removePermission
     )
 
@@ -12,7 +12,7 @@ file system.
 
 # Directory Entry
 
-@docs Path, Entry, resolve, absolutePath, fileType, FileType
+@docs Path, Entry, FileType
 
 
 # File Stat
@@ -36,6 +36,9 @@ file system.
 
 -}
 
+import Internal.Js
+import Json.Decode as Decode exposing (Decoder)
+import Json.Encode as Encode exposing (Value)
 import Posix.IO as IO exposing (IO)
 import Posix.IO.File.Permission as Permission exposing (Permission)
 import Time
@@ -53,12 +56,7 @@ type alias Pattern =
 
 
 {-| -}
-type Entry
-    = Entry DirEntry
-
-
-{-| -}
-type alias DirEntry =
+type alias Entry =
     { type_ : FileType
     , absolutePath : Path
     }
@@ -67,7 +65,7 @@ type alias DirEntry =
 {-| -}
 type alias Stat =
     { type_ : FileType
-    , mode : Permission
+    , mode : Permission.Mask
     , owner : Int
     , group : Int
     , size : Int
@@ -90,28 +88,112 @@ type FileType
     | SymbolicLink
 
 
-{-| -}
-resolve : Path -> IO String Entry
-resolve path =
-    IO.fail ""
+decodeFileType : Decoder FileType
+decodeFileType =
+    Decode.string
+        |> Decode.andThen
+            (\str ->
+                case str of
+                    "BlockDevice" ->
+                        Decode.succeed BlockDevice
+
+                    "CharacterDevice" ->
+                        Decode.succeed CharacterDevice
+
+                    "Dir" ->
+                        Decode.succeed Dir
+
+                    "FIFO" ->
+                        Decode.succeed FIFO
+
+                    "File" ->
+                        Decode.succeed File
+
+                    "Socket" ->
+                        Decode.succeed Socket
+
+                    "SymbolicLink" ->
+                        Decode.succeed SymbolicLink
+
+                    _ ->
+                        Decode.fail "Bug"
+            )
+
+
+decodeEntry : Decoder Entry
+decodeEntry =
+    Decode.map2 Entry
+        (Decode.field "fileType" decodeFileType)
+        (Decode.field "absolutePath" Decode.string)
+
+
+decodeStat : Decoder Stat
+decodeStat =
+    let
+        decodePosix =
+            Decode.map (round >> Time.millisToPosix) Decode.float
+    in
+    Decode.field "fileType" decodeFileType
+        |> Decode.andThen
+            (\fileType ->
+                Decode.field "mode" Decode.int
+                    |> Decode.andThen
+                        (\mode ->
+                            Decode.field "uid" Decode.int
+                                |> Decode.andThen
+                                    (\uid ->
+                                        Decode.field "gid" Decode.int
+                                            |> Decode.andThen
+                                                (\gid ->
+                                                    Decode.field "atimeMs" decodePosix
+                                                        |> Decode.andThen
+                                                            (\atime ->
+                                                                Decode.field "mtimeMs" decodePosix
+                                                                    |> Decode.andThen
+                                                                        (\mtime ->
+                                                                            Decode.field "ctimeMs" decodePosix
+                                                                                |> Decode.andThen
+                                                                                    (\ctime ->
+                                                                                        Decode.field "birthtimeMs" decodePosix
+                                                                                            |> Decode.andThen
+                                                                                                (\birthtime ->
+                                                                                                    Decode.field "size" Decode.int
+                                                                                                        |> Decode.andThen
+                                                                                                            (\size ->
+                                                                                                                Decode.field "absolutePath" Decode.string
+                                                                                                                    |> Decode.map
+                                                                                                                        (\absolutePath ->
+                                                                                                                            { type_ = fileType
+                                                                                                                            , mode = Permission.Mask mode
+                                                                                                                            , owner = uid
+                                                                                                                            , group = gid
+                                                                                                                            , size = size
+                                                                                                                            , lastAccessed = atime
+                                                                                                                            , lastModified = mtime
+                                                                                                                            , lastStatusChanged = ctime
+                                                                                                                            , createdAt = birthtime
+                                                                                                                            , absolutePath = absolutePath
+                                                                                                                            }
+                                                                                                                        )
+                                                                                                            )
+                                                                                                )
+                                                                                    )
+                                                                        )
+                                                            )
+                                                )
+                                    )
+                        )
+            )
 
 
 {-| -}
-absolutePath : Entry -> Path
-absolutePath f =
-    ""
-
-
-{-| -}
-fileType : Entry -> FileType
-fileType (Entry dirEnt) =
-    dirEnt.type_
-
-
-{-| -}
-stat : Entry -> Stat
-stat f =
-    Debug.todo ""
+stat : Path -> IO String Stat
+stat path =
+    IO.callJs "stat"
+        [ Encode.string path
+        ]
+        (Internal.Js.decodeJsResultString decodeStat)
+        |> IO.andThen IO.fromResult
 
 
 

@@ -87,7 +87,22 @@ module.exports = {
     exit: function(status) {
         process.exit(status);
     },
+
+    // DIRECTORY
+
+    stat: function(path) {
+        try {
+            let stat = fs.statSync(path);
+            stat.absolutePath = fs.realpathSync(path);
+            setFileType(stat);
+            return Ok(stat);
+        } catch (err) {
+            return encodeError(err);
+        }
+    },
+
     // Streams
+
     openReadStream: function(filename, bufferSize) {
         var key = 'read-' + ++lastKey;
 
@@ -149,6 +164,25 @@ module.exports = {
 
         return Ok(bytesWritten);
     },
+}
+
+
+function setFileType(stat) {
+    if (stat.isDirectory()) {
+        stat.fileType = 'Dir';
+    } else if (stat.isFile()) {
+        stat.fileType = 'File';
+    } else if (stat.isSocket()) {
+        stat.fileType = 'Socket';
+    } else if (stat.isFIFO()) {
+        stat.fileType = 'FIFO';
+    } else if (stat.isSymbolicLink()) {
+        stat.fileType = 'SymbolicLink';
+    } else if (stat.isBlockDevice()) {
+        stat.fileType = 'BlockDevice';
+    } else if (stat.isCharacterDevice()) {
+        stat.fileType = 'CharactedDevice';
+    }
 }
 
 function piplineKey(pipes) {
