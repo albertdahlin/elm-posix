@@ -1,10 +1,10 @@
-module Posix.IO.Random exposing (seed, generate)
+module Posix.IO.Random exposing (generate, seed)
 
 {-| This module is a workaround for the `Random` module not supporting creating Tasks.
 
 Uses NodeJs [crypto.randomBytes()](https://nodejs.org/dist/latest-v14.x/docs/api/crypto.html#crypto_crypto_randombytes_size_callback) to generate a 32bit seed.
 
-@docs seed, generate
+@docs generate, seed
 
 -}
 
