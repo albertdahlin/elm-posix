@@ -58,6 +58,7 @@ type alias Pattern =
 {-| -}
 type alias Entry =
     { type_ : FileType
+    , name : String
     , absolutePath : Path
     }
 
@@ -122,8 +123,9 @@ decodeFileType =
 
 decodeEntry : Decoder Entry
 decodeEntry =
-    Decode.map2 Entry
+    Decode.map3 Entry
         (Decode.field "fileType" decodeFileType)
+        (Decode.field "name" Decode.string)
         (Decode.field "absolutePath" Decode.string)
 
 
@@ -202,8 +204,12 @@ stat path =
 
 {-| -}
 list : Pattern -> IO String (List Entry)
-list name =
-    IO.return []
+list path =
+    IO.callJs "listDir"
+        [ Encode.string path
+        ]
+        (Internal.Js.decodeJsResultString (Decode.list decodeEntry))
+        |> IO.andThen IO.fromResult
 
 
 

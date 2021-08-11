@@ -13,6 +13,7 @@
             "elm/json": "1.1.3",
             "elm/random": "1.0.0",
             "elm/time": "1.0.0",
+            "elm-community/list-extra": "8.4.0",
             "rtfeldman/console-print": "1.0.1"
         },
         "indirect": {

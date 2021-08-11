@@ -100,6 +100,22 @@ module.exports = {
             return encodeError(err);
         }
     },
+    listDir: function(path) {
+        try {
+            let dirPath = fs.realpathSync(path);
+            let entries = fs.readdirSync(path, {
+                withFileTypes: true,
+                encoding: 'utf8',
+            });
+            entries.forEach(ent => {
+                setFileType(ent);
+                ent.absolutePath = dirPath + '/' + ent.name;
+            })
+            return Ok(entries);
+        } catch (err) {
+            return encodeError(err);
+        }
+    },
 
     // Streams
 

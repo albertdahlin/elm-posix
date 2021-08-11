@@ -1,8 +1,9 @@
 module Dir_Test exposing (..)
 
+import List.Extra as List
 import Posix.IO as IO exposing (IO)
-import Posix.IO.File as File
 import Posix.IO.Directory as Dir
+import Posix.IO.File as File
 import Posix.IO.File.Permission as Permission
 import Test exposing (Test)
 import Time
@@ -14,6 +15,7 @@ program : IO.Process -> IO String ()
 program process =
     [ statDir
     , statFile
+    , listDir
     ]
         |> Test.run
 
@@ -29,10 +31,11 @@ statDir =
             (\entry ->
                 if entry.type_ == Dir.Dir then
                     test.pass
+
                 else
                     test.fail "Not a dir"
-
             )
+
 
 statFile : Test
 statFile =
@@ -45,7 +48,29 @@ statFile =
             (\entry ->
                 if entry.type_ == Dir.File then
                     test.pass
+
                 else
                     test.fail "Not a file"
+            )
 
+
+listDir : Test
+listDir =
+    let
+        test =
+            Test.name "list dir"
+    in
+    Dir.list "."
+        |> IO.map
+            (\dirs ->
+                case List.find (\f -> f.name == "src") dirs of
+                    Just entry ->
+                        if entry.type_ == Dir.Dir then
+                            test.pass
+
+                        else
+                            test.fail "scr is not a dir"
+
+                    Nothing ->
+                        test.fail "no src dir found"
             )
