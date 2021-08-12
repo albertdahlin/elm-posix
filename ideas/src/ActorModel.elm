@@ -2,7 +2,7 @@ module ActorModel exposing
     ( Address, Inbox
     , spawn
     , send, recv
-    , addressOf, deferTo, defer, call, createInbox, recvOnly, recvIf, sendTo, spawnFSM
+    , addressOf, deferTo, defer, call, createInbox, recvOnly, recvIf, sendTo, spawnStateMachine
     )
 
 {-|
@@ -55,7 +55,21 @@ Everyghing else is just here to make things more convenient.
 
 # Convenient Stuff
 
-@docs addressOf, deferTo, defer, call, createInbox, recvOnly, recvIf, sendTo, spawnFSM
+## Send & Receive Messages
+
+@docs recvOnly, recvIf, sendTo, call
+
+## Defer I/O
+
+@docs deferTo, defer
+
+## Address & Inbox
+
+@docs addressOf, createInbox
+
+## Finite State Machines
+
+@docs spawnStateMachine
 
 -}
 
@@ -237,7 +251,7 @@ type alias StateMachine state msg =
 {-| Spawn a "The-Elm-Architecture" update function (finite state machine).
 
     main =
-        spawnFSM counter 0
+        spawnStateMachine counter 0
 
     type Msg
         = Increment
@@ -260,11 +274,11 @@ type alias StateMachine state msg =
                 )
 
 -}
-spawnFSM :
+spawnStateMachine :
     (msg -> model -> ( model, IO String () ))
     -> model
     -> IO String (Address msg)
-spawnFSM sm model =
+spawnStateMachine sm model =
     spawn (makeActor sm model)
 
 
@@ -335,7 +349,7 @@ type CounterMsg
 
 startCounter : Int -> IO String (Address CounterMsg)
 startCounter int =
-    spawnFSM counterActor int
+    spawnStateMachine counterActor int
 
 
 getCounterValue : Address CounterMsg -> IO String Int
