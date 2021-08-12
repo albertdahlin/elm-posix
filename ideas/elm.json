@@ -1,27 +1,19 @@
 {
-    "type": "application",
-    "source-directories": [
-        "src",
-        "../src"
+    "type": "package",
+    "name": "albertdahlin/elm-posix",
+    "summary": "Write posix programs using IO monad",
+    "license": "MIT",
+    "version": "1.0.0",
+    "exposed-modules": [
+        "ActorModel"
     ],
-    "elm-version": "0.19.1",
+    "elm-version": "0.19.0 <= v < 0.20.0",
     "dependencies": {
-        "direct": {
-            "elm/bytes": "1.0.8",
-            "elm/core": "1.0.5",
-            "elm/http": "2.0.0",
-            "elm/json": "1.1.3",
-            "elm/random": "1.0.0",
-            "elm/time": "1.0.0",
-            "elm-community/list-extra": "8.4.0",
-            "rtfeldman/console-print": "1.0.1"
-        },
-        "indirect": {
-            "elm/file": "1.0.5"
-        }
+        "elm/bytes": "1.0.8 <= v < 2.0.0",
+        "elm/core": "1.0.1 <= v < 2.0.0",
+        "elm/json": "1.1.0 <= v < 2.0.0",
+        "elm/random": "1.0.0 <= v < 2.0.0",
+        "elm/time": "1.0.0 <= v < 2.0.0"
     },
-    "test-dependencies": {
-        "direct": {},
-        "indirect": {}
-    }
+    "test-dependencies": {}
 }
