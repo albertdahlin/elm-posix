@@ -32,6 +32,9 @@ The actor model is characterized by inherent concurrency of computation within a
 ## Spawning a process (Actor)
 
 A process is just a function that takes an `Inbox msg` as argument.
+
+    myActor : Inbox msg -> IO err ()
+
 The inbox can be used to receive messages from other processes (actors).
 As long as you don't send this `Inbox` to someone else, only you can read
 messages.
