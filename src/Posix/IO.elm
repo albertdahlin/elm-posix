@@ -55,7 +55,7 @@ This allows the runtime to print error message to std err in case of a problem.
 
 import Dict exposing (Dict)
 import Internal.ContWithResult as Cont exposing (Cont)
-import Internal.Process as Proc exposing (Proc)
+import Internal.Process as Proc exposing (Eff)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode exposing (Value)
 import Process
@@ -74,7 +74,7 @@ type alias PortOut msg =
 
 {-| -}
 type alias IO err ok =
-    Cont Proc err ok
+    Cont Eff err ok
 
 
 {-| -}
@@ -87,9 +87,8 @@ type alias Process =
 
 {-| -}
 return : a -> IO err a
-return a =
-    Proc.Return a
-        |> embed
+return =
+    Cont.return
 
 
 {-| -}
@@ -147,8 +146,7 @@ sleep delay =
 -}
 performTask : Task Never a -> IO x a
 performTask task =
-    Proc.PerformTask task
-        |> embed
+    \next -> Proc.PerformTask (Task.map (Ok >> next) task)
 
 
 {-| Attempt a Task that can fail.
@@ -184,10 +182,9 @@ attemptTask task =
     \next ->
         task
             |> Task.map Ok
-            |> Task.onError (Task.succeed << Err)
+            |> Task.onError (Err >> Task.succeed)
+            |> Task.map next
             |> Proc.PerformTask
-            |> Proc.map next
-            |> Proc.Proc
 
 
 {-| Call a synchronous function in Javascript land.
@@ -246,25 +243,14 @@ elm.cli run --ext js/my-functions.js src/MyModule.elm
 -}
 callJs : String -> List Value -> Decoder a -> IO x a
 callJs fn args decoder =
-    Proc.CallJs { fn = fn, args = args } decoder
-        |> embed
+    \next -> Proc.CallJs { fn = fn, args = args } (Decode.map (Ok >> next) decoder)
 
 
 {-| Exit to shell with a status code
 -}
 exit : Int -> IO x ()
 exit status =
-    callJs
-        "exit"
-        [ Encode.int status ]
-        (Decode.fail "")
-
-
-{-| -}
-embed : Proc.Handler a -> IO x a
-embed handler =
-    \next ->
-        Proc.Proc (Proc.map (Ok >> next) handler)
+    \_ -> Proc.Done status
 
 
 {-| -}
@@ -338,33 +324,14 @@ Create your own program by defining `program` in your module.
 -}
 makeProgram : (Process -> IO String ()) -> Proc.PosixProgram
 makeProgram makeIO =
-    Proc.makeProgram
-        (\env ->
-            let
-                io =
-                    makeIO env
-            in
-            io
-                (\result ->
-                    case result of
-                        Ok () ->
-                            Proc.Proc
-                                (Proc.CallJs
-                                    { fn = "exit"
-                                    , args = [ Encode.int 0 ]
-                                    }
-                                    (Decode.fail "")
-                                )
+    Proc.makeProgram (\env -> makeIO env handleExit)
 
-                        Err error ->
-                            Proc.Proc
-                                (Proc.CallJs
-                                    ("\nERROR: "
-                                        ++ error
-                                        ++ "\n"
-                                        |> Proc.panic
-                                    )
-                                    (Decode.fail "")
-                                )
-                )
-        )
+
+handleExit : Result String () -> Eff
+handleExit result =
+    case result of
+        Ok () ->
+            Proc.Done 0
+
+        Err error ->
+            Proc.Crash error

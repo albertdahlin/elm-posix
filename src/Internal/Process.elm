@@ -6,10 +6,6 @@ import Json.Encode as Encode exposing (Value)
 import Task exposing (Task)
 
 
-type Proc
-    = Proc (Handler Proc)
-
-
 type alias PosixProgram =
     PortIn Msg -> PortOut Msg -> Program Flags Model Msg
 
@@ -43,83 +39,26 @@ type alias PortOut msg =
     ArgsToJs -> Cmd msg
 
 
-type Handler a
-    = CallJs ArgsToJs (Decoder a)
-    | PerformTask (Task Never a)
-    | Return a
-
-
 type Model
-    = WaitingForTask
-    | WaitingForValue ArgsToJs (Decoder Proc)
+    = WaitingForValue ArgsToJs (Decoder Eff)
+    | WaitingForTask
+    | Exited
 
 
 type Msg
     = GotValue Value
-    | GotNext Proc
+    | GotNext Eff
 
 
-map : (a -> b) -> Handler a -> Handler b
-map fn handler =
-    case handler of
-        CallJs arg decoder ->
-            Decode.map fn decoder
-                |> CallJs arg
-
-        PerformTask task ->
-            Task.map fn task
-                |> PerformTask
-
-        Return a ->
-            Return (fn a)
+type Eff
+    = CallJs ArgsToJs (Decoder Eff)
+    | PerformTask (Task Never Eff)
+    | Done Int
+    | Crash String
 
 
-next : (ArgsToJs -> Cmd Msg) -> Proc -> ( Model, Cmd Msg )
-next callJs (Proc handler) =
-    case handler of
-        CallJs arg decoder ->
-            ( WaitingForValue arg decoder, callJs arg )
-
-        PerformTask task ->
-            ( WaitingForTask, Task.perform GotNext task )
-
-        Return proc ->
-            next callJs proc
-
-
-update : (ArgsToJs -> Cmd Msg) -> Msg -> Model -> ( Model, Cmd Msg )
-update sendToJs msg model =
-    case ( msg, model ) of
-        ( GotValue value, WaitingForValue arg decoder ) ->
-            case Decode.decodeValue decoder value of
-                Ok proc ->
-                    next sendToJs proc
-
-                Err err ->
-                    let
-                        errorMsg =
-                            "The value returned from calling \""
-                                ++ arg.fn
-                                ++ "\" could not be decoded.\n"
-                                ++ Decode.errorToString err
-                    in
-                    ( model
-                    , panic errorMsg
-                        |> sendToJs
-                    )
-
-        ( GotNext proc, WaitingForTask ) ->
-            next sendToJs proc
-
-        _ ->
-            ( model
-            , panic "Unexpected msg and model combination."
-                |> sendToJs
-            )
-
-
-init : PortOut Msg -> (Env -> Proc) -> Flags -> ( Model, Cmd Msg )
-init portOut makeProcess flags =
+init : PortOut Msg -> (Env -> Eff) -> Flags -> ( Model, Cmd Msg )
+init portOut makeEff flags =
     let
         env =
             { argv = flags.argv
@@ -131,10 +70,62 @@ init portOut makeProcess flags =
                     |> Result.withDefault Dict.empty
             }
 
-        process =
-            makeProcess env
+        eff =
+            makeEff env
     in
-    next portOut process
+    next portOut eff
+
+
+update : PortOut Msg -> Msg -> Model -> ( Model, Cmd Msg )
+update callJs msg model =
+    case ( msg, model ) of
+        ( GotValue value, WaitingForValue args decoder ) ->
+            case Decode.decodeValue decoder value of
+                Ok eff ->
+                    next callJs eff
+
+                Err err ->
+                    ( Exited
+                    , "Return value from javascript function '"
+                        ++ args.fn
+                        ++ "' could not be decoded:\n"
+                        ++ Decode.errorToString err
+                        |> panic
+                        |> callJs
+                    )
+
+        ( GotNext eff, WaitingForTask ) ->
+            next callJs eff
+
+        _ ->
+            ( Exited
+            , panic "Error from js"
+                |> callJs
+            )
+
+
+next : PortOut Msg -> Eff -> ( Model, Cmd Msg )
+next callJs eff =
+    case eff of
+        CallJs args decoder ->
+            ( WaitingForValue args decoder, callJs args )
+
+        PerformTask task ->
+            ( WaitingForTask
+            , Task.perform GotNext task
+            )
+
+        Done status ->
+            ( Exited
+            , { fn = "exit", args = [ Encode.int status ] }
+                |> callJs
+            )
+
+        Crash err ->
+            ( Exited
+            , { fn = "panic", args = [ Encode.string err ] }
+                |> callJs
+            )
 
 
 subscriptions : PortIn Msg -> Model -> Sub Msg
@@ -142,10 +133,10 @@ subscriptions portIn model =
     portIn GotValue
 
 
-makeProgram : (Env -> Proc) -> PosixProgram
-makeProgram makeIo portIn portOut =
+makeProgram : (Env -> Eff) -> PosixProgram
+makeProgram makeEff portIn portOut =
     Platform.worker
-        { init = init portOut makeIo
+        { init = init portOut makeEff
         , update = update portOut
         , subscriptions = subscriptions portIn
         }
