@@ -250,7 +250,7 @@ callJs fn args decoder =
 -}
 exit : Int -> IO x ()
 exit status =
-    \_ -> Proc.Done status
+    \_ -> Proc.Done (Ok status)
 
 
 {-| -}
@@ -329,9 +329,5 @@ makeProgram makeIO =
 
 handleExit : Result String () -> Eff
 handleExit result =
-    case result of
-        Ok () ->
-            Proc.Done 0
-
-        Err error ->
-            Proc.Crash error
+    Result.map (\_ -> 0) result
+        |> Proc.Done

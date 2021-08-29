@@ -53,8 +53,7 @@ type Msg
 type Eff
     = CallJs ArgsToJs (Decoder Eff)
     | PerformTask (Task Never Eff)
-    | Done Int
-    | Crash String
+    | Done (Result String Int)
 
 
 init : PortOut Msg -> (Env -> Eff) -> Flags -> ( Model, Cmd Msg )
@@ -99,7 +98,7 @@ update callJs msg model =
 
         _ ->
             ( Exited
-            , panic "Error from js"
+            , panic "This should never happen"
                 |> callJs
             )
 
@@ -115,17 +114,19 @@ next callJs eff =
             , Task.perform GotNext task
             )
 
-        Done status ->
-            ( Exited
-            , { fn = "exit", args = [ Encode.int status ] }
-                |> callJs
-            )
+        Done result ->
+            case result of
+                Ok status ->
+                    ( Exited
+                    , { fn = "exit", args = [ Encode.int status ] }
+                        |> callJs
+                    )
 
-        Crash err ->
-            ( Exited
-            , { fn = "panic", args = [ Encode.string err ] }
-                |> callJs
-            )
+                Err err ->
+                    ( Exited
+                    , { fn = "panic", args = [ Encode.string err ] }
+                        |> callJs
+                    )
 
 
 subscriptions : PortIn Msg -> Model -> Sub Msg
