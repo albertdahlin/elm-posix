@@ -206,7 +206,7 @@ function compileProgram(args) {
     fs.writeFileSync(`${elmMain}.elm`, sourceCode);
 
     try {
-        if (args.debug) {
+        if (args.opt.debug) {
             childProcess.execSync(`elm make --debug ${elmMain}.elm --output ${elmMain}.js`);
         } else {
             childProcess.execSync(`elm make --optimize ${elmMain}.elm --output ${elmMain}.js`);
