@@ -22,6 +22,10 @@ function createIo(rl) {
                 this.send(e.toString());
             }
         },
+        mkdir: function(name, recursive) {
+            fs.mkdirSync(name, { recursive: recursive, mode: 0o777 });
+            this.send();
+        },
         fstat: function(filename) {
             try {
                 this.send(fs.statSync(filename));

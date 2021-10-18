@@ -1,7 +1,7 @@
 module Posix.IO.File exposing
     ( Filename
     , contentsOf, writeContentsTo, stat, Stats
-    , readDir, Entry(..)
+    , readDir, mkDir, Entry(..)
     , FD, Flag, open
     , flagRead, flagReadPlus, flagWrite, flagWritePlus, flagAppend, flagAppendPlus
     , read, write
@@ -20,7 +20,7 @@ module Posix.IO.File exposing
 
 # Directory IO
 
-@docs readDir, Entry
+@docs readDir, Entry, mkDir
 
 
 # Posix Stream IO
@@ -302,3 +302,15 @@ write (FD fd) content =
     IO.make
         (Decode.succeed ())
         (Effect.File <| Effect.Write fd content)
+
+
+{-| Create a dir.
+
+    mkdir <recursive> <name>
+
+-}
+mkDir : Bool -> String -> IO ()
+mkDir recursive name =
+    IO.make
+        (Decode.succeed ())
+        (Effect.File <| Effect.MkDir name recursive)

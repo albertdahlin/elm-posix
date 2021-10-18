@@ -20,5 +20,6 @@ type File
     | Open String String
     | Stat String
     | ReadDir String
+    | MkDir String Bool
 
 

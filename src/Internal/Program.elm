@@ -146,6 +146,15 @@ effectToCmd portOut effect =
                             ]
                         }
 
+                Effect.MkDir name recursive ->
+                    portOut
+                        { fn = "mkdir"
+                        , args =
+                            [ Encode.string name
+                            , Encode.bool recursive
+                            ]
+                        }
+
                 Effect.Open filename flags ->
                     portOut
                         { fn = "fopen"
