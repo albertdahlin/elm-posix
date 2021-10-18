@@ -1,6 +1,6 @@
 {
   "name": "@albertdahlin/elm-posix",
-  "version": "1.0.3",
+  "version": "1.1.0",
   "description": "Write CLI scripts in Elm",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
